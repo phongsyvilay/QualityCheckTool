@@ -1,0 +1,23 @@
+﻿<behaviors>
+  <!--
+  *********************************************************************
+  FrameWorX: Behavior setting for SL/WCF communication (client only)
+  Copyright (c) 1986-2012 ICONICS, Inc.
+  *********************************************************************
+  -->
+  <!-- FwxServer service client-side behavior-->
+  <endpointBehaviors>
+    <behavior name="Ico.Fwx.Communication.Server.FwxStandardAsyncService.Behavior">
+      <dataContractSerializer maxItemsInObjectGraph="4000000"/>
+      
+      <clientCredentials>
+        <serviceCertificate>
+          <authentication certificateValidationMode="None"/>
+        </serviceCertificate>
+      </clientCredentials>
+      
+    </behavior>
+  </endpointBehaviors>
+
+  <!-- End of section used by Fwx Communication -->
+</behaviors>

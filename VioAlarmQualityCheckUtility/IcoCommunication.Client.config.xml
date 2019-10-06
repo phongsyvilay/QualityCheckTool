@@ -1,0 +1,135 @@
+﻿<client>
+  <!--
+  *********************************************************************
+  FrameWorX: Client setting for SL/WCF communication
+  Copyright (c) 1986-2013 ICONICS, Inc.
+  *********************************************************************
+  -->
+  <!-- Start of section used by Fwx Communication -->
+  <!--basic http-->
+  <endpoint address="http://placeholder/BasicHttp" binding="basicHttpBinding" bindingConfiguration="BasicHttp_IAsyncServer"
+      contract="Ico.Fwx.Communication.Core.IAsyncServer" name="BasicHttp_IAsyncServer"
+      behaviorConfiguration="Ico.Fwx.Communication.Server.FwxStandardAsyncService.Behavior" >
+  </endpoint>
+  <endpoint address="https://placeholder/BasicHttps" binding="basicHttpBinding" bindingConfiguration="BasicHttps_IAsyncServer"
+      contract="Ico.Fwx.Communication.Core.IAsyncServer" name="BasicHttps_IAsyncServer"
+      behaviorConfiguration="Ico.Fwx.Communication.Server.FwxStandardAsyncService.Behavior" >
+  </endpoint>
+  <endpoint address="http://placeholder/WSHttp" binding="wsHttpBinding" bindingConfiguration="WSHttp_IAsyncServer"
+      contract="Ico.Fwx.Communication.Core.IAsyncServer" name="WSHttp_IAsyncServer"
+      behaviorConfiguration="Ico.Fwx.Communication.Server.FwxStandardAsyncService.Behavior" >
+  </endpoint>
+  <endpoint address="net.tcp://placeholder:8778/NetTcp" binding="netTcpBinding" bindingConfiguration="NetTcp_IAsyncServer"
+      contract="Ico.Fwx.Communication.Core.IAsyncServer" name="NetTcp_IAsyncServer"
+      behaviorConfiguration="Ico.Fwx.Communication.Server.FwxStandardAsyncService.Behavior" >
+  </endpoint>
+  <endpoint address="net.pipe://placeholder/NetNamedPipe" binding="netNamedPipeBinding" bindingConfiguration="NetNamedPipe_IAsyncServer"
+      contract="Ico.Fwx.Communication.Core.IAsyncServer" name="NetNamedPipe_IAsyncServer"
+      behaviorConfiguration="Ico.Fwx.Communication.Server.FwxStandardAsyncService.Behavior" >
+  </endpoint>
+
+  <endpoint address="http://placeholder/BasicHttp_Auth" binding="basicHttpBinding" bindingConfiguration="BasicHttp_Auth_IAsyncServer"
+      contract="Ico.Fwx.Communication.Core.IAsyncServer" name="BasicHttp_Auth_IAsyncServer"
+      behaviorConfiguration="Ico.Fwx.Communication.Server.FwxStandardAsyncService.Behavior" >
+  </endpoint>
+  <endpoint address="https://placeholder/BasicHttps_Auth" binding="basicHttpBinding" bindingConfiguration="BasicHttps_Auth_IAsyncServer"
+      contract="Ico.Fwx.Communication.Core.IAsyncServer" name="BasicHttps_Auth_IAsyncServer"
+      behaviorConfiguration="Ico.Fwx.Communication.Server.FwxStandardAsyncService.Behavior" >
+  </endpoint>
+  <endpoint address="http://placeholder/WSHttp_Auth" binding="wsHttpBinding" bindingConfiguration="WSHttp_Auth_IAsyncServer"
+      contract="Ico.Fwx.Communication.Core.IAsyncServer" name="WSHttp_Auth_IAsyncServer"
+      behaviorConfiguration="Ico.Fwx.Communication.Server.FwxStandardAsyncService.Behavior" >
+    <identity>
+      <!-- this will make the Windows security fall back to NTLM: http://msdn.microsoft.com/en-us/library/bb628618.aspx -->
+      <servicePrincipalName/>
+    </identity>
+  </endpoint>
+  <endpoint address="net.tcp://placeholder:8778/NetTcp_Auth" binding="netTcpBinding" bindingConfiguration="NetTcp_Auth_IAsyncServer"
+      contract="Ico.Fwx.Communication.Core.IAsyncServer" name="NetTcp_Auth_IAsyncServer"
+      behaviorConfiguration="Ico.Fwx.Communication.Server.FwxStandardAsyncService.Behavior" >
+    <identity>
+      <!-- this will make the Windows security fall back to NTLM: http://msdn.microsoft.com/en-us/library/bb628618.aspx -->
+      <servicePrincipalName/>
+    </identity>
+  </endpoint>
+
+  <endpoint address="http://placeholder/WSHttp_Cert" binding="wsHttpBinding" bindingConfiguration="WSHttp_Cert_IAsyncServer"
+      contract="Ico.Fwx.Communication.Core.IAsyncServer" name="WSHttp_Cert_IAsyncServer"
+      behaviorConfiguration="Ico.Fwx.Communication.Server.FwxStandardAsyncService.Behavior" >
+    <identity>
+    </identity>
+  </endpoint>
+  <endpoint address="http://placeholder/BasicHttps_Cert" binding="basicHttpBinding" bindingConfiguration="BasicHttps_Cert_IAsyncServer"
+      contract="Ico.Fwx.Communication.Core.IAsyncServer" name="BasicHttps_Cert_IAsyncServer"
+      behaviorConfiguration="Ico.Fwx.Communication.Server.FwxStandardAsyncService.Behavior" >
+  </endpoint>
+  <!-- End of section used by Fwx Communication -->
+
+  <!-- Start of section used by reverse Fwx Communication -->
+  <endpoint address="" binding="basicHttpBinding" bindingConfiguration="BasicHttp_IAsyncServer"
+      contract="Ico.Fwx.Communication.Core.IReverseAsyncServer" name="BasicHttpReverse_IReverseAsyncServer"
+      behaviorConfiguration="Ico.Fwx.Communication.Server.FwxStandardAsyncService.Behavior" >
+  </endpoint>
+  <endpoint address="" binding="basicHttpBinding" bindingConfiguration="BasicHttps_IAsyncServer"
+    contract="Ico.Fwx.Communication.Core.IReverseAsyncServer" name="BasicHttpsReverse_IReverseAsyncServer"
+    behaviorConfiguration="Ico.Fwx.Communication.Server.FwxStandardAsyncService.Behavior" >
+  </endpoint>
+  <endpoint address="" binding="wsHttpBinding" bindingConfiguration="WSHttp_IAsyncServer"
+      contract="Ico.Fwx.Communication.Core.IReverseAsyncServer" name="WSHttp_IReverseAsyncServer"
+      behaviorConfiguration="Ico.Fwx.Communication.Server.FwxStandardAsyncService.Behavior" >
+  </endpoint>
+  <endpoint address="" binding="wsHttpBinding" bindingConfiguration="WSHttp_IAsyncServer"
+      contract="Ico.Fwx.Communication.Core.IReverseAsyncServer" name="WSHttpReverse_IReverseAsyncServer"
+      behaviorConfiguration="Ico.Fwx.Communication.Server.FwxStandardAsyncService.Behavior" >
+  </endpoint>
+  <endpoint address="" binding="netTcpBinding" bindingConfiguration="NetTcp_IAsyncServer"
+      contract="Ico.Fwx.Communication.Core.IReverseAsyncServer" name="NetTcp_IReverseAsyncServer"
+      behaviorConfiguration="Ico.Fwx.Communication.Server.FwxStandardAsyncService.Behavior" >
+  </endpoint>
+  <!-- End of section used by reverse Fwx Communication -->
+
+  <!-- Start of section used by Azure Fwx Communication -->
+  <endpoint address="" binding="basicHttpBinding" bindingConfiguration="BasicHttp_IAsyncServer"
+      contract="Ico.FwxServer.Azure.IFwxMonitorService" name="BasicHttp_IFwxMonitorService"
+      behaviorConfiguration="Ico.Fwx.Communication.Server.FwxStandardAsyncService.Behavior" >
+  </endpoint>
+  <endpoint address="" binding="basicHttpBinding" bindingConfiguration="BasicHttps_IAsyncServer"
+      contract="Ico.FwxServer.Azure.IFwxMonitorService" name="BasicHttps_IFwxMonitorService"
+      behaviorConfiguration="Ico.Fwx.Communication.Server.FwxStandardAsyncService.Behavior" >
+  </endpoint>
+  <endpoint address="" binding="wsHttpBinding" bindingConfiguration="WSHttp_IAsyncServer"
+      contract="Ico.FwxServer.Azure.IFwxMonitorService" name="WSHttp_IFwxMonitorService"
+      behaviorConfiguration="Ico.Fwx.Communication.Server.FwxStandardAsyncService.Behavior" >
+  </endpoint>
+  <endpoint address="" binding="netTcpBinding" bindingConfiguration="NetTcp_IAsyncServer"
+      contract="Ico.FwxServer.Azure.IFwxMonitorService" name="NetTcp_IFwxMonitorService"
+      behaviorConfiguration="Ico.Fwx.Communication.Server.FwxStandardAsyncService.Behavior" >
+  </endpoint>
+  <!-- End of section used by Azure Fwx Communication -->
+  
+  <!-- Start of section used by Ewx -->
+  <endpoint address="http://dev.virtualearth.net/webservices/v1/imageryservice/imageryservice.svc"
+		binding="basicHttpBinding" bindingConfiguration="BasicHttpBinding_IImageryService"
+		contract="ImageryService.IImageryService" name="BasicHttpBinding_IImageryService" />
+  <endpoint address="http://dev.virtualearth.net/webservices/v1/geocodeservice/GeocodeService.svc"
+		binding="basicHttpBinding" bindingConfiguration="BasicHttpBinding_IGeocodeService"
+		contract="GeocodeService.IGeocodeService" name="BasicHttpBinding_IGeocodeService" />
+  <!-- End of section used by Ewx -->
+
+  <!-- Start of section used by GridWorX -->
+  <endpoint
+    binding="netNamedPipeBinding" bindingConfiguration="NetNamedPipeBinding_IRemoteDatabase"
+    contract="Ico.Remoting.IRemoteDatabaseAsync" name="IcoRemoting_IRemoteDatabase" />
+
+  <!--<endpoint address="http://localhost/RemotingService/Database"
+    binding="basicHttpBinding" bindingConfiguration="BasicHttpBinding_IRemoteDatabase"
+    contract="Ico.Remoting.IRemoteDatabaseAsync" name="IcoRemoting_IRemoteDatabase" />-->
+
+  <!-- End of section used by GridWorX -->
+  
+  <!-- Communication with Service Fabric -->
+  <endpoint address="" binding="basicHttpBinding" bindingConfiguration="BasicHttp_IAsyncServer"
+      contract="Ico.Fwx.Connector.Common.IConnector" name="BasicHttpBinding_IConnector"
+      behaviorConfiguration="Ico.Fwx.Communication.Server.FwxStandardAsyncService.Behavior" />
+  <!-- End of communication with Service Fabric -->
+</client>
