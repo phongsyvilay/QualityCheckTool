@@ -23,24 +23,32 @@
                 </HierarchicalDataTemplate>
             </TreeView.ItemTemplate>
         </TreeView>
+
         <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2">
             <Grid Height="125">
-                <TextBlock HorizontalAlignment="Left" Height="40" Margin="10,10,0,0" TextWrapping="Wrap" Text="IP Address and Server Instance Name or use . to get local servers." VerticalAlignment="Top" Width="200"/>
+                <TextBlock HorizontalAlignment="Left" Height="40" Margin="10,10,-13,0" TextWrapping="Wrap" Text="Enter &lt;computer_name>/&lt;instance_name> or use . to get local servers." VerticalAlignment="Top" Width="245"/>
                 <TextBox x:Name="IPTextBox" HorizontalAlignment="Left" Height="24" Margin="10,0,0,0" Width="140" Text="."/>
                 <Button x:Name="IPSearchButton" Content="Search" Margin="10, 0, 34, 2" Width="50" Height="24" HorizontalAlignment="Right" Click="IPSearchButton_Click" />
-                <StackPanel VerticalAlignment="Bottom" Margin="10">
-                    <RadioButton x:Name="IntSec" IsChecked="True">Use Windows NT Integrated Security</RadioButton>
-                    <RadioButton x:Name="UserSec">Use a specific username and password</RadioButton>
-                </StackPanel>
+                
             </Grid>
             <Grid>
                 <TextBlock HorizontalAlignment="Left" Height="20" Margin="10,10,0,0" TextWrapping="Wrap" Text="SQL Server Instance" VerticalAlignment="Top" Width="200"/>
                 <ComboBox x:Name="SqlServerInstance_ComboBox" HorizontalAlignment="Left" Height="24" Margin="10,30,0,0" VerticalAlignment="Top" Width="200" SelectionChanged="SqlServerInstance_ComboBox_SelectionChanged"/>
+                <TextBlock x:Name="SelectBox" IsHitTestVisible="False" Margin="20,33,55,75"  VerticalAlignment="Center" Height="24" Visibility="Hidden" Text="Select a Server Instance">
+                </TextBlock>
+                <StackPanel x:Name="ConnectionRadios" VerticalAlignment="Center" Margin="10, 30, 0, 0" >
+                    <RadioButton x:Name="IntSec" IsChecked="True" Checked="radioButton_Checked">Use Windows NT Integrated Security</RadioButton>
+                    <RadioButton x:Name="UserSec" Checked="radioButton_Checked">Use same username and password</RadioButton>
+                    <RadioButton x:Name="DifSec" Checked="radioButton_Checked">Specify username and password</RadioButton>
+                </StackPanel>
             </Grid>
 
             <Grid>
                 <TextBlock HorizontalAlignment="Left" Height="20" Margin="10,10,0,0" TextWrapping="Wrap" Text="SQL Server Database" VerticalAlignment="Top" Width="200"/>
                 <ComboBox x:Name="SqlServerDatabase_ComboBox" HorizontalAlignment="Left" Height="24" Margin="10,30,0,0" VerticalAlignment="Top" Width="200" SelectionChanged="SqlServerDatabase_ComboBox_SelectionChanged"/>
+                <TextBlock x:Name="DBSelectBox" IsHitTestVisible="False" Margin="20,33,55,75"  VerticalAlignment="Center" Height="24" Visibility="Hidden" Text="Select a Database">
+                </TextBlock>
+
             </Grid>
 
             <Button Click="Run" Content="Run" HorizontalAlignment="Left" Height="24" Margin="10,30,0,0" VerticalAlignment="Top" Padding="20,0"/>

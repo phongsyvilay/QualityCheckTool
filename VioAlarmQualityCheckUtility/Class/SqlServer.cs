@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,6 +9,8 @@ using System.Data.SqlClient;
 using System.Windows;
 using Microsoft.Win32;
 using VioAlarmQualityCheckUtility.Models;
+using VioAlarmQualityCheckUtility.Windows;
+using System.Configuration;
 
 namespace VioAlarmQualityCheckUtility.Class
 {
@@ -49,7 +52,7 @@ namespace VioAlarmQualityCheckUtility.Class
 		{
 			const string keyName = @"Software\Microsoft\Microsoft SQL Server";
 			const string valueName = "InstalledInstances";
-			const string defaultName = "MSSQLSERVER"; 
+			const string defaultName = "MSSQLSERVER";
 
 			using (var key = hive.OpenSubKey(keyName, false))
 			{
@@ -96,61 +99,45 @@ namespace VioAlarmQualityCheckUtility.Class
 
 		}
 
-
-		// Function:        Get Databases from Selected Local SQL Server Instance
+		// Function:        Get Databases from Selected Local or Remote SQL Server Instance
 		// Description:     Returns a collection of databases from the user selected local SQL Server instance
 		// ==============================================================================================================================================================
 		public static List<string> GetLocalSqlInstanceDatabases()
 		{
-			List<string> databases = new List<string>();
-
 			SqlConnection sqlConn = new SqlConnection("Data Source=" + Properties.Settings.Default.SqlServerInstance + ";Integrated Security=True");
-
-			SqlCommand cmd = new SqlCommand();
-			SqlDataReader reader;
-
-			try
-			{
-				cmd.CommandText = "SELECT name FROM sys.databases;";
-				cmd.CommandType = CommandType.Text;
-				cmd.Connection = sqlConn;
-				cmd.Connection.Open();
-
-				reader = cmd.ExecuteReader();
-
-				while (reader.Read())
-				{
-					databases.Add(reader[0].ToString());
-				}
-
-				reader.Close();
-
-				cmd.Connection.Close();
-			}
-			catch (Exception ex)
-			{
-				MessageBox.Show("Could not establish connection to selected SQL Server Instance.");
-				
-			}
-
+			List<string> databases = QueryDatabases(sqlConn);
 			return databases;
 		}
 
 		public static List<string> GetSqlInstanceDatabases(string instance, string username, string password)
 		{
-			List<string> databases = new List<string>();
-
 			SqlConnection sqlConn = new SqlConnection($"Data Source={instance}; User ID={username}; Password={password}");
+			List<string> databases = QueryDatabases(sqlConn);
+			return databases;
+		}
 
+		public static List<string> QueryDatabases(SqlConnection sqlConn) 
+		{
+			List<string> databases = new List<string>();
 			SqlCommand cmd = new SqlCommand();
 			SqlDataReader reader;
-
 			try
 			{
 				cmd.CommandText = "SELECT name FROM sys.databases;";
 				cmd.CommandType = CommandType.Text;
 				cmd.Connection = sqlConn;
 				cmd.Connection.Open();
+
+				if (cmd.Connection.State == ConnectionState.Closed)
+				{
+					var dialog = new UsernamePasswordDialog();
+					var username = dialog.Username;
+					var password = dialog.Password;
+
+					sqlConn = new SqlConnection(
+						$"Data Source={sqlConn.DataSource}; User ID={username}; Password={password}");
+					cmd.Connection.Open();
+				}
 
 				reader = cmd.ExecuteReader();
 
@@ -162,93 +149,61 @@ namespace VioAlarmQualityCheckUtility.Class
 				reader.Close();
 
 				cmd.Connection.Close();
+
 			}
 			catch (Exception ex)
 			{
-				MessageBox.Show("Could not establish connection to selected SQL Server Instance.");
-
+				MessageBox.Show("Could not establish connection to selected SQL Server Instance. Try using a username and password.");
+				((MainWindow)Application.Current.MainWindow).SqlServerInstance_ComboBox.SelectedIndex = -1;
 			}
-
+			
 			return databases;
 		}
 
 
 
 
-		// Function:        
-		// Description:     
+		// Functions: GetAlarmSources, GetRemoteAlarmSources, and QueryAwxSources         
+		// Description: These are all related to opening up a SQL connection to either a remote server or local SQL instance and querying the SQL DB for the sources.
 		// ==============================================================================================================================================================
 		public List<AwxSource> GetAlarmSources()
 		{
-			List<AwxSource> data = new List<AwxSource>();
-
-			AwxSource awxSource;
-
 			SqlConnection sqlConn = new SqlConnection("Data Source=" + Properties.Settings.Default.SqlServerInstance + ";Integrated Security=True");
-
-			SqlCommand cmd = new SqlCommand();
-			SqlDataReader reader;
-
-			try
-			{
-				cmd.CommandText = "SELECT Name, Input1 FROM " + Properties.Settings.Default.SqlServerDatabase + ".dbo.AWX_Source;";
-				cmd.CommandType = CommandType.Text;
-				cmd.Connection = sqlConn;
-				cmd.Connection.Open();
-
-				reader = cmd.ExecuteReader();
-
-				while (reader.Read())
-				{
-
-					awxSource = new AwxSource
-					{
-						Name = reader[0].ToString(),
-						Input1 = reader[1].ToString()
-					};
-
-					data.Add(awxSource);
-				}
-
-				reader.Close();
-
-				cmd.Connection.Close();
-			}
-			catch (Exception ex)
-			{
-				
-			}
-
+			List<AwxSource> data = QueryAwxSources(sqlConn);
 			return data;
 		}
 
 		public List<AwxSource> GetRemoteAlarmSources(string instance, string username, string password)
 		{
-			List<AwxSource> data = new List<AwxSource>();
-
-			AwxSource awxSource;
-
 			SqlConnection sqlConn = new SqlConnection($@"Data Source={instance}; User ID={username}; Password={password}");
+			List<AwxSource> data = QueryAwxSources(sqlConn);
+			return data;
+		}
 
+		public static List<AwxSource> QueryAwxSources(SqlConnection sqlConn)
+		{
 			SqlCommand cmd = new SqlCommand();
-			SqlDataReader reader;
+			List<AwxSource> data = new List<AwxSource>();
 
 			try
 			{
-				cmd.CommandText = "SELECT Name, Input1 FROM " + Properties.Settings.Default.SqlServerDatabase + ".dbo.AWX_Source;";
+				cmd.CommandText = "SELECT Name, Input1, SourceID FROM " + Properties.Settings.Default.SqlServerDatabase + ".dbo.AWX_Source;";
 				cmd.CommandType = CommandType.Text;
 				cmd.Connection = sqlConn;
 				cmd.Connection.Open();
-
-				reader = cmd.ExecuteReader();
+				var reader = cmd.ExecuteReader();
 
 				while (reader.Read())
 				{
 
-					awxSource = new AwxSource
+					var name = reader[0];
+					var input1 = reader[1];
+					var id = reader[2];
+					var awxSource = new AwxSource
 					{
 						Name = reader[0].ToString(),
-						Input1 = reader[1].ToString()
+						Input1 = reader[1].ToString(),
+						ID = (int)reader[2]
 					};
 
 					data.Add(awxSource);
@@ -260,13 +215,19 @@ namespace VioAlarmQualityCheckUtility.Class
 			}
 			catch (Exception ex)
 			{
-
+				MessageBox.Show(ex.ToString());
 			}
 
 			return data;
 		}
 
+		// Function:        
+		// Description:     
+		// ==============================================================================================================================================================
+		public void QueryAwxSourcesToArea()
+		{
 
+		}
 
 
 		// Function:        
@@ -276,12 +237,9 @@ namespace VioAlarmQualityCheckUtility.Class
 		{
 			List<AscEquipmentProperty> data = new List<AscEquipmentProperty>();
 
-			AscEquipmentProperty ascEquipmentProperty;
-
 			SqlConnection sqlConn = new SqlConnection("Data Source=" + Properties.Settings.Default.SqlServerInstance + ";Integrated Security=True");
 
 			SqlCommand cmd = new SqlCommand();
-			SqlDataReader reader;
 
 			try
 			{
@@ -290,11 +248,11 @@ namespace VioAlarmQualityCheckUtility.Class
 				cmd.Connection = sqlConn;
 				cmd.Connection.Open();
 
-				reader = cmd.ExecuteReader();
+				var reader = cmd.ExecuteReader();
 
 				while (reader.Read())
 				{
-					ascEquipmentProperty = new AscEquipmentProperty
+					var ascEquipmentProperty = new AscEquipmentProperty
 					{
 						ParentID = reader[0].ToString(),
 						Name = reader[1].ToString(),
@@ -308,9 +266,9 @@ namespace VioAlarmQualityCheckUtility.Class
 
 				cmd.Connection.Close();
 			}
-			catch (Exception ex)
+			catch (Exception)
 			{
-				
+
 			}
 
 			return data;
