@@ -13,7 +13,7 @@ namespace VioAlarmQualityCheckUtility.Models
 		public string RealtimePointName { get; set; }
 	}
 
-	class AwxSource
+	public class AwxSource
 	{
 		public string Name { get; set; }
 		public string Input1 { get; set; }

@@ -151,7 +151,7 @@ namespace VioAlarmQualityCheckUtility.Class
 				cmd.Connection.Close();
 
 			}
-			catch (Exception ex)
+			catch (Exception)
 			{
 				MessageBox.Show("Could not establish connection to selected SQL Server Instance. Try using a username and password.");
 				((MainWindow)Application.Current.MainWindow).SqlServerInstance_ComboBox.SelectedIndex = -1;
@@ -188,6 +188,7 @@ namespace VioAlarmQualityCheckUtility.Class
 			try
 			{
 				cmd.CommandText = "SELECT Name, Input1, SourceID FROM " + Properties.Settings.Default.SqlServerDatabase + ".dbo.AWX_Source;";
+				//cmd.CommandText = "SELECT * FROM " + Properties.Settings.Default.SqlServerDatabase + ".dbo.AWX_Source;";
 				cmd.CommandType = CommandType.Text;
 				cmd.Connection = sqlConn;
 				cmd.Connection.Open();
@@ -196,9 +197,18 @@ namespace VioAlarmQualityCheckUtility.Class
 				while (reader.Read())
 				{
 
+					//var columns = new List<string>();
+
+					//for (int i = 0; i < reader.FieldCount; i++)
+					//{
+					//	columns.Add(reader.GetName(i));
+					//}
+
+					//columns.ToString();
 					var name = reader[0];
 					var input1 = reader[1];
 					var id = reader[2];
+
 					var awxSource = new AwxSource
 					{
 						Name = reader[0].ToString(),
@@ -219,14 +229,6 @@ namespace VioAlarmQualityCheckUtility.Class
 			}
 
 			return data;
-		}
-
-		// Function:        
-		// Description:     
-		// ==============================================================================================================================================================
-		public void QueryAwxSourcesToArea()
-		{
-
 		}
 
 

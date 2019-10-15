@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using VioAlarmQualityCheckUtility.Class;
+using VioAlarmQualityCheckUtility.Models;
 using VioAlarmQualityCheckUtility.Properties;
 using VioAlarmQualityCheckUtility.Windows;
 
@@ -71,13 +72,19 @@ namespace VioAlarmQualityCheckUtility
 							_password));
 				else
 					QualityCheck.CheckAll(SqlServer.GetAlarmSources());
+
+				AreaSourceHandler ash = new AreaSourceHandler();
+				var allAreas = ash.GetAreas(SqlServerInstance_ComboBox.SelectedItem.ToString(), SqlServerDatabase_ComboBox.SelectedItem.ToString(), _username,
+					_password, SqlServer.GetRemoteAlarmSources(SqlServerInstance_ComboBox.SelectedItem.ToString(), _username,
+						_password));
+				IList<AreaModel> selectedArea = allAreas.FindAll(i => i.RecursiveParentID == 0);
+				areaTreeView.ItemsSource = selectedArea;
 			}
 			else
 			{
 				MessageBox.Show("Invalid SQL Server Selection.");
 			}
 		}
-
 
 		// SQL Server Instance Combo Box Selection Changed
 		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -131,6 +138,11 @@ namespace VioAlarmQualityCheckUtility
 		{
 		}
 
+
+		// Searches either the local computer for SQL databases or searches for a remote database based off it's computer name or IP address along with the instance name
+		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		private void IPSearchButton_Click(object sender, RoutedEventArgs e)
 		{
 			var SqlServerInstances = new List<string>();
@@ -165,6 +177,7 @@ namespace VioAlarmQualityCheckUtility
 					}
 
 					SqlServerInstance_ComboBox.ItemsSource = SqlServerInstances;
+					SelectBox.Visibility = Visibility.Visible;
 				}
 				catch (Exception ex)
 				{
@@ -179,9 +192,13 @@ namespace VioAlarmQualityCheckUtility
 
 		private void AreaTreeView_OnSelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
 		{
-			throw new NotImplementedException();
+			
 		}
 
+
+		// Will prompt the username and password dialog box if the user does not have access to the selected database 
+		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		private void radioButton_Checked(object sender, RoutedEventArgs e)
 		{
 			SqlServerInstance_ComboBox.SelectionChanged -= SqlServerInstance_ComboBox_SelectionChanged;

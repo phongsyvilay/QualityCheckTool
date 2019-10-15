@@ -60,6 +60,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Class\AreaSourceHandler.cs" />
+    <Compile Include="Models\AreaModel.cs" />
+    <Compile Include="Models\Source2Area.cs" />
     <Compile Include="Windows\UsernamePasswordDialog.xaml.cs">
       <DependentUpon>UsernamePasswordDialog.xaml</DependentUpon>
     </Compile>

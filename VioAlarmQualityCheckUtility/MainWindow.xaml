@@ -19,7 +19,7 @@
         <TreeView x:Name="areaTreeView" Grid.Row="1" Grid.Column="0" Width="200" ItemsSource="{Binding}" SelectedItemChanged="AreaTreeView_OnSelectedItemChanged" Margin="0,10,0,0">
             <TreeView.ItemTemplate>
                 <HierarchicalDataTemplate x:Name="dataNames" ItemsSource="{Binding Items}" >
-                    <TextBlock Text="{Binding Path=Name}"/>
+                    <TextBlock Text="{Binding Path = Name}"/>
                 </HierarchicalDataTemplate>
             </TreeView.ItemTemplate>
         </TreeView>
