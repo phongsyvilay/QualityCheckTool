@@ -54,7 +54,7 @@
             <Button Click="Run" Content="Run" HorizontalAlignment="Left" Height="24" Margin="10,30,0,0" VerticalAlignment="Top" Padding="20,0"/>
         </StackPanel>
 
-        <DataGrid x:Name="Report" Grid.Row="1" Grid.Column="1" AutoGenerateColumns="False" Margin="0,10,0,0" VerticalAlignment="Stretch" HorizontalScrollBarVisibility="Auto" SelectionChanged="Report_SelectionChanged">
+        <DataGrid x:Name="Report" Grid.Row="1" Grid.Column="1" AutoGenerateColumns="False" Margin="0,10,0,0" VerticalAlignment="Stretch" HorizontalScrollBarVisibility="Auto" SelectionChanged="Report_SelectionChanged"  CanUserAddRows="False">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="ID" Binding="{Binding ID}" Visibility="Hidden"/>
                 <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="Auto"/>

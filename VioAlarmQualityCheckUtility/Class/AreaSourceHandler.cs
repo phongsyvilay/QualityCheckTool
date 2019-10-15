@@ -84,6 +84,12 @@ namespace VioAlarmQualityCheckUtility.Class
 				}
 
 				AssignSourceToArea(sources, areasList, s2a);
+
+				//List<AreaModel> topAreas = areasList.FindAll(a => a.RecursiveParentID == 0);
+				//foreach (var areaModel in topAreas)
+				//{
+				//	RecurseList(areaModel);
+				//}
 			}
 
 			return areasList;
@@ -101,5 +107,7 @@ namespace VioAlarmQualityCheckUtility.Class
 				area.SourcesList.Add(source);
 			}
 		}
+
+		
 	}
 }

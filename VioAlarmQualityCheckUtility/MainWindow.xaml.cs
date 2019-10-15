@@ -151,6 +151,7 @@ namespace VioAlarmQualityCheckUtility
 
 			SqlServerInstance_ComboBox.ItemsSource = null;
 			SqlServerDatabase_ComboBox.ItemsSource = null;
+			DBSelectBox.Visibility = Visibility.Hidden;
 
 			if (IPTextBox.Text.Equals("."))
 			{
@@ -190,9 +191,15 @@ namespace VioAlarmQualityCheckUtility
 		}
 
 
+		List<AwxSource> sources = new List<AwxSource>();
 		private void AreaTreeView_OnSelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
 		{
-			
+			if(sources.Count !=0 )
+				sources.Clear();
+
+			sources = RecurseList((AreaModel) e.NewValue);
+
+			Report.ItemsSource = QualityCheck.CheckAll(sources);
 		}
 
 
@@ -213,6 +220,30 @@ namespace VioAlarmQualityCheckUtility
 				_username = dialog.Username;
 				_password = dialog.Password;
 			}
+		}
+
+		public List<AwxSource> RecurseList(AreaModel area)
+		{
+			foreach (var source in area.SourcesList)
+			{
+				sources.Add(source);
+			}
+
+			foreach (var child in area.Children)
+			{
+				if (child.SourcesList.Count != 0)
+				{
+					foreach (var awxSource in child.SourcesList)
+					{
+						area.SourcesList.Add(awxSource);
+					}
+				}
+
+				if (child.Children.Count != 0)
+					RecurseList(child);
+			}
+
+			return sources;
 		}
 	}
 }
