@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:VioAlarmQualityCheckUtility"
         mc:Ignorable="d"
-        Title="MainWindow" Height="600" Width="1200">
+        Title="VIO Tag Quality Check" Height="600" Width="1250">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -16,7 +16,8 @@
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <TreeView x:Name="areaTreeView" Grid.Row="1" Grid.Column="0" Width="200" ItemsSource="{Binding}" SelectedItemChanged="AreaTreeView_OnSelectedItemChanged" Margin="0,10,0,0">
+
+        <TreeView x:Name="AreaTreeView" Grid.Row="1" Grid.Column="0" ItemsSource="{Binding}" SelectedItemChanged="AreaTreeView_OnSelectedItemChanged">
             <TreeView.ItemTemplate>
                 <HierarchicalDataTemplate x:Name="dataNames" ItemsSource="{Binding Items}" >
                     <TextBlock Text="{Binding Path = Name}"/>
@@ -24,37 +25,89 @@
             </TreeView.ItemTemplate>
         </TreeView>
 
-        <StackPanel Orientation="Horizontal" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2">
-            <Grid Height="125">
-                <TextBlock HorizontalAlignment="Left" Height="40" Margin="10,10,-13,0" TextWrapping="Wrap" Text="Enter &lt;computer_name>/&lt;instance_name> or use . to get local servers." VerticalAlignment="Top" Width="245"/>
-                <TextBox x:Name="IPTextBox" HorizontalAlignment="Left" Height="24" Margin="10,0,0,0" Width="140" Text="."/>
-                <Button x:Name="IPSearchButton" Content="Search" Margin="10, 0, 34, 2" Width="50" Height="24" HorizontalAlignment="Right" Click="IPSearchButton_Click" />
-                
-            </Grid>
-            <Grid>
-                <TextBlock HorizontalAlignment="Left" Height="20" Margin="10,10,0,0" TextWrapping="Wrap" Text="SQL Server Instance" VerticalAlignment="Top" Width="200"/>
-                <ComboBox x:Name="SqlServerInstance_ComboBox" HorizontalAlignment="Left" Height="24" Margin="10,30,0,0" VerticalAlignment="Top" Width="200" SelectionChanged="SqlServerInstance_ComboBox_SelectionChanged"/>
-                <TextBlock x:Name="SelectBox" IsHitTestVisible="False" Margin="20,33,55,75"  VerticalAlignment="Center" Height="24" Visibility="Hidden" Text="Select a Server Instance">
-                </TextBlock>
-                <StackPanel x:Name="ConnectionRadios" VerticalAlignment="Center" Margin="10, 30, 0, 0" >
-                    <RadioButton x:Name="IntSec" IsChecked="True" Checked="radioButton_Checked">Use Windows NT Integrated Security</RadioButton>
-                    <RadioButton x:Name="UserSec" Checked="radioButton_Checked">Use same username and password</RadioButton>
-                    <RadioButton x:Name="DifSec" Checked="radioButton_Checked">Specify username and password</RadioButton>
+        <Grid Margin="20, 0, 10, 0" MaxHeight="300" Grid.Row="0" Grid.Column="0" MinWidth="351">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="0"  Margin="-20, 0, -10, 0" Background="#414141" Foreground="White" FontSize="20" Height="30" Padding="20, 0, 0, 0">Search for Servers:</TextBlock>
+            <!--<TextBox x:Name="InputTextBox" Grid.Column="0" Grid.Row="1" HorizontalAlignment="Left" Height="24" Width="185" Text="."/>-->
+
+            <StackPanel Orientation="Horizontal"  Grid.Column="0" Grid.Row="1" Margin="0, 25, 0, 0">
+                <RadioButton x:Name="LocalMachine" GroupName="Radio" IsChecked="True" Checked="radioButton_Checked" Content="Local Machine"/>
+                <RadioButton x:Name="LocalNetwork" GroupName="Radio" Checked="radioButton_Checked" Content="Local Network" Margin="25, 0, 0, 0"/>
+            </StackPanel>
+
+            <RadioButton x:Name="RemoteMachine" Grid.Column="0" Grid.Row="2"  Margin="0, 10, 0, 0"  GroupName="Radio" Checked="radioButton_Checked" Content="Remote computer via name or IP address"/>
+            <TextBox x:Name="netConnection" Grid.Column="0" Visibility="Collapsed" Grid.Row="3" Width="326" Margin="20, 10, 5, 0" Height="24" Text="Name or IP Address" GotFocus="netConnection_GotFocus" LostFocus="netConnection_LostFocus" />
+            <StackPanel Grid.Row="4" x:Name="NetCredentialPanel" Visibility="Collapsed" HorizontalAlignment="Left" Orientation="Horizontal" Margin="0, 6, 0, 0">
+                <TextBox x:Name="netUsernameBox" Width="158" Margin="20, 0, 5, 0" Height="24" Text="Login" GotFocus="netUsernameBox_GotFocus" LostFocus="netUsernameBox_LostFocus"/>
+                <PasswordBox x:Name="netPasswordBox" Width="158" Height="24" Margin="5, 0, 0, 0" Password="Password" GotFocus="netPasswordBox_GotFocus" LostFocus="netPasswordBox_LostFocus"/>
+                <!--<Button VerticalAlignment="Bottom" HorizontalAlignment="Right" Content="Confirm" Height="25" Width="50"  Click="ButtonBase_OnClick"/>-->
+            </StackPanel>
+            <Button x:Name="SearchButton" Grid.Column="0" Grid.Row="5" HorizontalAlignment="Left" Content="Search" Width="60" Height="25" Margin="20, 10, 0, 10" Click="SearchButton_Click" />
+        </Grid>
+
+        <Grid Grid.Row="0" Grid.Column="1">
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5" Background="#414141" Foreground="White" FontSize="20" Height="30" Padding="20, 0, 0, 0">Connect</TextBlock>
+            <TextBlock Grid.Row="1" Grid.Column="0" FontWeight="DemiBold" FontSize="16" Padding="20, 10, 0, 0">SQL Authentication Method</TextBlock>
+
+            <TextBlock Grid.Row="1" Grid.Column="1" FontWeight="DemiBold" FontSize="16" Height="24" Margin="15, 10, 0, 0">SQL Instance</TextBlock>
+
+            <ComboBox x:Name="SqlServerInstance_ComboBox" Grid.Row="2" Grid.Column="1" Height="24" Width="160" Margin="18,10,0,0" SelectionChanged="SqlServerInstance_ComboBox_SelectionChanged"/>
+            <TextBlock x:Name="SelectBox" Grid.Row="2" Grid.Column="1" IsHitTestVisible="False" Visibility="Hidden" Text="Select a Server Instance" Margin="22,16,33,4"/>
+
+            <RadioButton x:Name="ServInt" Grid.Row="2" Grid.Column="0" Margin="20,14,0,0" IsChecked="True" Checked="ServRadioButton_Checked" Content="Windows authentication"/>
+            <RadioButton x:Name="ServDif" Grid.Row="3" Grid.Column="0" Margin="20,6,0,0" Checked="ServRadioButton_Checked" Content="Login and password"/>
+
+            <StackPanel x:Name="ServerCredentialPanel" Grid.Row="4" Grid.Column="0" Visibility="Collapsed" Margin="20, 30, 0, 0">
+                <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
+                    <TextBox x:Name="ServerUsernameBox" Text="Username" Height="26" Width="175" Margin="26, 0, 0, 0" GotFocus="ServerUsernameBox_GotFocus" LostFocus="ServerUsernameBox_LostFocus"/>
                 </StackPanel>
-            </Grid>
+                <StackPanel Orientation="Horizontal" Margin="0, 5, 0, 5">
+                    <PasswordBox x:Name="ServerPasswordBox" Width="175"  Height="26"  Margin="26, 0, 0, 0" Password="password" GotFocus="ServerPasswordBox_GotFocus" LostFocus="ServerPasswordBox_LostFocus"/>
+                </StackPanel>
+                <!--<StackPanel Orientation="Horizontal" Margin= "0,0,0,5">
+                    <Button Content="Clear" Height="24" Width="50" Margin="0, 0, 5, 0" Click="InstanceClear_OnClick"/>
+                    <Button Content="Set" Height="24" Width="50"  Click="InstanceCreds_OnClick"/>
+                </StackPanel>-->
+            </StackPanel>
 
-            <Grid>
-                <TextBlock HorizontalAlignment="Left" Height="20" Margin="10,10,0,0" TextWrapping="Wrap" Text="SQL Server Database" VerticalAlignment="Top" Width="200"/>
-                <ComboBox x:Name="SqlServerDatabase_ComboBox" HorizontalAlignment="Left" Height="24" Margin="10,30,0,0" VerticalAlignment="Top" Width="200" SelectionChanged="SqlServerDatabase_ComboBox_SelectionChanged"/>
-                <TextBlock x:Name="DBSelectBox" IsHitTestVisible="False" Margin="20,33,55,75"  VerticalAlignment="Center" Height="24" Visibility="Hidden" Text="Select a Database">
-                </TextBlock>
 
-            </Grid>
 
-            <Button Click="Run" Content="Run" HorizontalAlignment="Left" Height="24" Margin="10,30,0,0" VerticalAlignment="Top" Padding="20,0"/>
-        </StackPanel>
+            <TextBlock Grid.Row="1" Grid.Column="3" FontWeight="DemiBold" FontSize="16" Height="24"  Margin="15, 10, 0, 0">SQL Database</TextBlock>
+            <ComboBox x:Name="SqlServerDatabase_ComboBox" Height="24" Grid.Row="2" Grid.Column="3"  Margin="18, 10, 0, 0" Width="160" SelectionChanged="SqlServerDatabase_ComboBox_SelectionChanged" />
+            <TextBlock x:Name="DBSelectBox" IsHitTestVisible="False" Grid.Row="2" Grid.Column="3" Visibility="Hidden" Text="Select a Database" Margin="24,16,54,5"/>
+            <Button  Grid.Row="2" Grid.Column="4" Click="Run" Content="Run Quality Check" HorizontalAlignment="Left" Margin="15, 10, 0, 0" Height="24" Width="125"/>
+        </Grid>
 
-        <DataGrid x:Name="Report" Grid.Row="1" Grid.Column="1" AutoGenerateColumns="False" Margin="0,10,0,0" VerticalAlignment="Stretch" HorizontalScrollBarVisibility="Auto" SelectionChanged="Report_SelectionChanged"  CanUserAddRows="False">
+        <DataGrid x:Name="Report" Grid.Row="1" Grid.Column="1" AutoGenerateColumns="False" Margin="0,0,0,0" VerticalAlignment="Stretch" HorizontalScrollBarVisibility="Auto"  CanUserAddRows="False">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="ID" Binding="{Binding ID}" Visibility="Hidden"/>
                 <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="Auto"/>

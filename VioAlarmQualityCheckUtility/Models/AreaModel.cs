@@ -6,8 +6,8 @@ namespace VioAlarmQualityCheckUtility.Models
 	{
 		public List<AreaModel> Children = new List<AreaModel>();
 		public List<AwxSource> SourcesList = new List<AwxSource>();
-		public int ID { get; set; }
-		public int RecursiveParentID { get; set; }
+		public int Id { get; set; }
+		public int RecursiveParentId { get; set; }
 		public string Name { get; set; }
 
 

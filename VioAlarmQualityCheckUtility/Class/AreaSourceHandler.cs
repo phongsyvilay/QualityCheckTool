@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
-using System.Windows.Documents;
+using System.Windows;
 using VioAlarmQualityCheckUtility.Models;
 
 namespace VioAlarmQualityCheckUtility.Class
@@ -14,82 +14,94 @@ namespace VioAlarmQualityCheckUtility.Class
 			List<AreaModel> areasList = new List<AreaModel>();
 			SqlDataReader reader;
 			List<Source2Area> s2a = new List<Source2Area>();
+			var temp = Properties.Settings.Default.SqlServerInstance;
+
+			SqlConnection connection;
 
 
-			using (var connection =
-				new SqlConnection(
-					$@"Data Source={instance}; Initial Catalog = {db}; User ID={username}; Password={password}"))
+			if (username == "")
+				connection = new SqlConnection("Data Source=" + Properties.Settings.Default.SqlServerInstance + $";Initial Catalog = {db}; Integrated Security=True");
+			else
+				connection = new SqlConnection($@"Data Source={instance}; Initial Catalog = {db}; User ID={username}; Password={password}");
+
+			
+			
+			using (connection)
 			{
-
-				connection.Open();
-
-				using (var command = new SqlCommand("dbo.GetAllFromArea", connection)
-				{ CommandType = CommandType.StoredProcedure })
+				try
 				{
+					connection.Open();
 
-					reader = command.ExecuteReader();
-
-					while (reader.Read())
+					using (var command = new SqlCommand("dbo.GetAllFromArea", connection)
+						{CommandType = CommandType.StoredProcedure})
 					{
 
-						int input1;
+						reader = command.ExecuteReader();
 
-						if (!DBNull.Value.Equals(reader[6]))
+						while (reader.Read())
 						{
-							input1 = (int) reader[6];
+
+							int input1;
+
+							if (!DBNull.Value.Equals(reader[6]))
+							{
+								input1 = (int) reader[6];
+							}
+							else
+								input1 = 0;
+
+
+							var area = new AreaModel
+							{
+								Id = (int) reader[1],
+								Name = reader[5].ToString(),
+								RecursiveParentId = input1,
+							};
+
+							if (area.RecursiveParentId != 0)
+							{
+								var tempArea = areasList.Find(t => t.Id == area.RecursiveParentId);
+								tempArea.Children.Add(area);
+							}
+
+							areasList.Add(area);
 						}
-						else 
-							input1 = 0;
 
-
-						var area = new AreaModel
-						{
-							ID = (int) reader[1],
-							Name = reader[5].ToString(),
-							RecursiveParentID = input1,
-						};
-
-						if (area.RecursiveParentID != 0)
-						{
-							var tempArea = areasList.Find(t => t.ID == area.RecursiveParentID);
-							tempArea.Children.Add(area);
-						}
-
-						areasList.Add(area);
+						reader.Close();
 					}
-
-					reader.Close();
+				}
+				catch (Exception e)
+				{
+					throw e;
 				}
 
-				using (var command = new SqlCommand("dbo.GetAllFromAreaSource", connection) {CommandType = CommandType.StoredProcedure})
+				try
 				{
-					reader = command.ExecuteReader();
-
-
-					while (reader.Read())
+					using (var command = new SqlCommand("dbo.GetAllFromAreaSource", connection)
+						{CommandType = CommandType.StoredProcedure})
 					{
-						s2a.Add(new Source2Area
+						reader = command.ExecuteReader();
+
+
+						while (reader.Read())
 						{
-							SourceID = (int) reader[4],
-							AreaID = (int) reader[1]
-						});
-						
-						//var columns = new List<string>();
-						//for (int i = 0; i < reader.FieldCount; i++)
-						//{
-						//	columns.Add(reader.GetName(i));
-						//	columns.Add(reader[i].GetType().ToString());
-						//}
+							s2a.Add(new Source2Area
+							{
+								SourceID = (int) reader[4],
+								AreaID = (int) reader[1]
+							});
+
+							
+						}
 					}
+				}
+				catch (Exception e)
+				{
+					throw e;
+
 				}
 
 				AssignSourceToArea(sources, areasList, s2a);
-
-				//List<AreaModel> topAreas = areasList.FindAll(a => a.RecursiveParentID == 0);
-				//foreach (var areaModel in topAreas)
-				//{
-				//	RecurseList(areaModel);
-				//}
 			}
 
 			return areasList;
@@ -102,7 +114,7 @@ namespace VioAlarmQualityCheckUtility.Class
 				var source = temp;
 				Source2Area source2Area = s2a.Find(s => s.SourceID == temp.ID);
 
-				AreaModel area = areas.Find(a => a.ID == source2Area.AreaID);
+				AreaModel area = areas.Find(a => a.Id == source2Area.AreaID);
 
 				area.SourcesList.Add(source);
 			}

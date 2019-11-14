@@ -1,25 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Net;
-using System.IO;
 using System.Windows;
-using Microsoft.Win32;
 using Ico.Fwx.ClientWrapper;
 using VioAlarmQualityCheckUtility.Models;
 
 namespace VioAlarmQualityCheckUtility.Class
 {
-	class QualityCheck
+	internal class QualityCheck
 	{
-		SqlServer SqlServer = new SqlServer();
+		private SqlServer SqlServer = new SqlServer();
 
-		FwxClientWrapper fwxClientWrapper = new FwxClientWrapper();
-		ReadDoneDelegate readDoneDelegate;
-
-
+		private readonly FwxClientWrapper fwxClientWrapper = new FwxClientWrapper();
+		private ReadDoneDelegate readDoneDelegate;
 
 
 		// Check All
@@ -28,55 +20,60 @@ namespace VioAlarmQualityCheckUtility.Class
 		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		public List<ReportModel> CheckAll(List<AwxSource> sources)
 		{
-			List<AwxSource> awxSourceList = sources;
-			List<AscEquipmentProperty> ascEquipmentPropertyList = new List<AscEquipmentProperty>();
-
-			List<ReportModel> report = new List<ReportModel>();
-
-			int id = 0;
-
-			// Alarm Sources
-			//awxSourceList = SqlServer.GetAlarmSources();
-
-			readDoneDelegate = new ReadDoneDelegate(ReadDoneCallBack);
-
-			foreach (var item in awxSourceList)
+			try
 			{
-				if (item.Input1.Contains("@"))
-				{
-					string clean = item.Input1.Replace("x=", "")
-						.Replace("(", "")
-						.Replace(")", "")
-						.Replace("{", "")
-						.Replace("}", "")
-						.Replace("|", "")
-						.Replace("&", "")
-						.Replace("!", "");
+				var awxSourceList = sources;
+				var ascEquipmentPropertyList = new List<AscEquipmentProperty>();
 
-					string[] points = clean.Split('@');
+				var report = new List<ReportModel>();
 
-					for (int i = 0; i < points.Length - 1; i++)
+				var id = 0;
+
+				// Alarm Sources
+				//awxSourceList = SqlServer.GetAlarmSources();
+
+				readDoneDelegate = ReadDoneCallBack;
+
+				foreach (var item in awxSourceList)
+					if (item.Input1.Contains("@"))
 					{
-						ReportModel reportModel = new ReportModel
+						var clean = item.Input1.Replace("x=", "")
+							.Replace("(", "")
+							.Replace(")", "")
+							.Replace("{", "")
+							.Replace("}", "")
+							.Replace("|", "")
+							.Replace("&", "")
+							.Replace("!", "");
+
+						var points = clean.Split('@');
+
+						for (var i = 0; i < points.Length - 1; i++)
 						{
-							ID = id,
-							Type = "Alarm",
-							TagName = item.Name,
-							PointName = "@" + points[i + 1].Trim(),
-							PointStatus = "Updating..."
-						};
+							var reportModel = new ReportModel
+							{
+								ID = id,
+								Type = "Alarm",
+								TagName = item.Name,
+								PointName = "@" + points[i + 1].Trim(),
+								PointStatus = "Updating..."
+							};
 
-						report.Add(reportModel);
-						id++;
+							report.Add(reportModel);
+							id++;
 
-						ReadPointAsync("@" + points[i + 1].Trim());
+							ReadPointAsync("@" + points[i + 1].Trim());
+						}
 					}
-				}
+
+				((MainWindow) Application.Current.MainWindow).Report.ItemsSource = report;
+
+				return report;
 			}
-
-			((MainWindow)Application.Current.MainWindow).Report.ItemsSource = report;
-
-			return report;
+			catch (Exception e)
+			{
+				throw e;
+			}
 		}
 
 		//readDoneDelegate = new ReadDoneDelegate(ReadDoneCallback);
@@ -134,10 +131,6 @@ namespace VioAlarmQualityCheckUtility.Class
 		//}
 
 
-
-
-
-
 		// Read Point Async
 		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -148,29 +141,21 @@ namespace VioAlarmQualityCheckUtility.Class
 		}
 
 
-
-
 		// Read Done Call Back
 		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		private void ReadDoneCallBack(ReadDoneResult result)
 		{
-			List<ReportModel> data = (List<ReportModel>)((MainWindow)Application.Current.MainWindow).Report.ItemsSource;
+			var data = (List<ReportModel>) ((MainWindow) Application.Current.MainWindow).Report.ItemsSource;
 
 			if (data != null)
-			{
 				foreach (var item in data)
-				{
 					if (item.PointName == result.UserState.ToString())
-					{
 						item.PointStatus = result.Value.Status.ToString();
-					}
-				}
-			}
 
-			((MainWindow)Application.Current.MainWindow).Report.ItemsSource = data;
-			((MainWindow)Application.Current.MainWindow).Report.Items.Refresh();
+			((MainWindow) Application.Current.MainWindow).Report.ItemsSource = data;
+			((MainWindow) Application.Current.MainWindow).Report.Items.Refresh();
 		}
 	}
 }

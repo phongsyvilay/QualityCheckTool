@@ -1,16 +1,11 @@
 ﻿using System;
-using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Data;
 using System.Data.SqlClient;
 using System.Windows;
 using Microsoft.Win32;
 using VioAlarmQualityCheckUtility.Models;
-using VioAlarmQualityCheckUtility.Windows;
-using System.Configuration;
 
 namespace VioAlarmQualityCheckUtility.Class
 {
@@ -78,6 +73,29 @@ namespace VioAlarmQualityCheckUtility.Class
 		}
 
 
+		public List<string> GetRemoteInstances(string computerName, string username, string password)
+		{
+			RegistryKey envRegistryKey;
+			List<string> instances = new List<string>();
+
+			using (NetworkShareAccessor.Access(computerName, Environment.UserName, username, password))
+			{
+				RegistryView registryView = Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Registry32;
+				envRegistryKey = RegistryKey.OpenRemoteBaseKey(RegistryHive.LocalMachine, computerName, registryView);
+
+				RegistryKey temp = envRegistryKey.OpenSubKey(@"SOFTWARE\Microsoft\Microsoft SQL Server\Instance Names\SQL", false);
+				if (temp != null)
+				{
+					foreach (var names in temp.GetValueNames())
+					{
+						instances.Add(names);
+					}
+				}
+				
+				return instances;
+			}
+		}
+
 
 		public List<string> GetSqlInstances()
 		{
@@ -128,17 +146,6 @@ namespace VioAlarmQualityCheckUtility.Class
 				cmd.Connection = sqlConn;
 				cmd.Connection.Open();
 
-				if (cmd.Connection.State == ConnectionState.Closed)
-				{
-					var dialog = new UsernamePasswordDialog();
-					var username = dialog.Username;
-					var password = dialog.Password;
-
-					sqlConn = new SqlConnection(
-						$"Data Source={sqlConn.DataSource}; User ID={username}; Password={password}");
-					cmd.Connection.Open();
-				}
-
 				reader = cmd.ExecuteReader();
 
 				while (reader.Read())
@@ -154,7 +161,7 @@ namespace VioAlarmQualityCheckUtility.Class
 			catch (Exception)
 			{
 				MessageBox.Show("Could not establish connection to selected SQL Server Instance. Try using a username and password.");
-				((MainWindow)Application.Current.MainWindow).SqlServerInstance_ComboBox.SelectedIndex = -1;
+				throw;
 			}
 			
 			return databases;
@@ -188,7 +195,6 @@ namespace VioAlarmQualityCheckUtility.Class
 			try
 			{
 				cmd.CommandText = "SELECT Name, Input1, SourceID FROM " + Properties.Settings.Default.SqlServerDatabase + ".dbo.AWX_Source;";
-				//cmd.CommandText = "SELECT * FROM " + Properties.Settings.Default.SqlServerDatabase + ".dbo.AWX_Source;";
 				cmd.CommandType = CommandType.Text;
 				cmd.Connection = sqlConn;
 				cmd.Connection.Open();
@@ -196,15 +202,6 @@ namespace VioAlarmQualityCheckUtility.Class
 
 				while (reader.Read())
 				{
-
-					//var columns = new List<string>();
-
-					//for (int i = 0; i < reader.FieldCount; i++)
-					//{
-					//	columns.Add(reader.GetName(i));
-					//}
-
-					//columns.ToString();
 					var name = reader[0];
 					var input1 = reader[1];
 					var id = reader[2];
@@ -223,9 +220,9 @@ namespace VioAlarmQualityCheckUtility.Class
 
 				cmd.Connection.Close();
 			}
-			catch (Exception ex)
+			catch (Exception e)
 			{
-				MessageBox.Show(ex.ToString());
+				throw e;
 			}
 
 			return data;
@@ -270,7 +267,7 @@ namespace VioAlarmQualityCheckUtility.Class
 			}
 			catch (Exception)
 			{
-
+				MessageBox.Show("GetAssetEquipmentProperty Error");
 			}
 
 			return data;
