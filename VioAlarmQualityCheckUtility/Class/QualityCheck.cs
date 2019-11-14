@@ -66,13 +66,28 @@ namespace VioAlarmQualityCheckUtility.Class
 						}
 					}
 
-				((MainWindow) Application.Current.MainWindow).Report.ItemsSource = report;
+				((MainWindow)Application.Current.MainWindow).Report.ItemsSource = report;
 
 				return report;
 			}
 			catch (Exception e)
 			{
 				throw e;
+			}
+		}
+
+		public bool TestWorkbenchConnection()
+		{
+			try
+			{
+				var sampleValue = fwxClientWrapper.Read(@"@RSLinx OPC Server\[CC004]U100005.UNIT_EN.Value");
+				return sampleValue.Status.ToString() != "Bad - User Access Denied";
+			}
+			catch (Exception e)
+			{
+				Console.WriteLine(e);
+				throw;
+
 			}
 		}
 
@@ -147,15 +162,15 @@ namespace VioAlarmQualityCheckUtility.Class
 		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		private void ReadDoneCallBack(ReadDoneResult result)
 		{
-			var data = (List<ReportModel>) ((MainWindow) Application.Current.MainWindow).Report.ItemsSource;
+			var data = (List<ReportModel>)((MainWindow)Application.Current.MainWindow).Report.ItemsSource;
 
 			if (data != null)
 				foreach (var item in data)
 					if (item.PointName == result.UserState.ToString())
 						item.PointStatus = result.Value.Status.ToString();
 
-			((MainWindow) Application.Current.MainWindow).Report.ItemsSource = data;
-			((MainWindow) Application.Current.MainWindow).Report.Items.Refresh();
+			((MainWindow)Application.Current.MainWindow).Report.ItemsSource = data;
+			((MainWindow)Application.Current.MainWindow).Report.Items.Refresh();
 		}
 	}
 }

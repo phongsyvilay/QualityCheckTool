@@ -25,12 +25,16 @@ namespace VioAlarmQualityCheckUtility.Windows
 				try
 				{
 					Status status = wrapper.Login(WorkUser.Text, WorkPassword.Password);
+					if (status.IsGood)
+						this.Close();
+					else
+						MessageBox.Show("Login failed");
 				}
 				catch (Exception)
 				{
 					MessageBox.Show("Login error.");
 				}
-			
+
 			}
 
 		}

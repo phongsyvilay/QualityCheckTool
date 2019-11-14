@@ -49,10 +49,15 @@
             </StackPanel>
 
             <RadioButton x:Name="RemoteMachine" Grid.Column="0" Grid.Row="2"  Margin="0, 10, 0, 0"  GroupName="Radio" Checked="radioButton_Checked" Content="Remote computer via name or IP address"/>
-            <TextBox x:Name="netConnection" Grid.Column="0" Visibility="Collapsed" Grid.Row="3" Width="326" Margin="20, 10, 5, 0" Height="24" Text="Name or IP Address" GotFocus="netConnection_GotFocus" LostFocus="netConnection_LostFocus" />
-            <StackPanel Grid.Row="4" x:Name="NetCredentialPanel" Visibility="Collapsed" HorizontalAlignment="Left" Orientation="Horizontal" Margin="0, 6, 0, 0">
+            <TextBox x:Name="netConnection" Grid.Column="0" Visibility="Collapsed" Grid.Row="3" Width="326" Margin="20, 10, 5, 0" Height="24" Text="US3GRRPVIZEMU04.saespe.amcs.tld" />
+            <!--<StackPanel Grid.Row="4" x:Name="NetCredentialPanel" Visibility="Collapsed" HorizontalAlignment="Left" Orientation="Horizontal" Margin="0, 6, 0, 0">
                 <TextBox x:Name="netUsernameBox" Width="158" Margin="20, 0, 5, 0" Height="24" Text="Login" GotFocus="netUsernameBox_GotFocus" LostFocus="netUsernameBox_LostFocus"/>
                 <PasswordBox x:Name="netPasswordBox" Width="158" Height="24" Margin="5, 0, 0, 0" Password="Password" GotFocus="netPasswordBox_GotFocus" LostFocus="netPasswordBox_LostFocus"/>
+                --><!--<Button VerticalAlignment="Bottom" HorizontalAlignment="Right" Content="Confirm" Height="25" Width="50"  Click="ButtonBase_OnClick"/>--><!--
+            </StackPanel>-->
+            <StackPanel Grid.Row="4" x:Name="NetCredentialPanel" Visibility="Collapsed" HorizontalAlignment="Left" Orientation="Horizontal" Margin="0, 6, 0, 0">
+                <TextBox x:Name="netUsernameBox" Width="158" Margin="20, 0, 5, 0" Height="24" Text="Administrator" />
+                <PasswordBox x:Name="netPasswordBox" Width="158" Height="24" Margin="5, 0, 0, 0" Password="SD#9136200"/>
                 <!--<Button VerticalAlignment="Bottom" HorizontalAlignment="Right" Content="Confirm" Height="25" Width="50"  Click="ButtonBase_OnClick"/>-->
             </StackPanel>
             <Button x:Name="SearchButton" Grid.Column="0" Grid.Row="5" HorizontalAlignment="Left" Content="Search" Width="60" Height="25" Margin="20, 10, 0, 10" Click="SearchButton_Click" />
@@ -86,12 +91,25 @@
             <RadioButton x:Name="ServInt" Grid.Row="2" Grid.Column="0" Margin="20,14,0,0" IsChecked="True" Checked="ServRadioButton_Checked" Content="Windows authentication"/>
             <RadioButton x:Name="ServDif" Grid.Row="3" Grid.Column="0" Margin="20,6,0,0" Checked="ServRadioButton_Checked" Content="Login and password"/>
 
-            <StackPanel x:Name="ServerCredentialPanel" Grid.Row="4" Grid.Column="0" Visibility="Collapsed" Margin="20, 30, 0, 0">
+            <!--<StackPanel x:Name="ServerCredentialPanel" Grid.Row="4" Grid.Column="0" Visibility="Collapsed" Margin="20, 30, 0, 0">
                 <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
                     <TextBox x:Name="ServerUsernameBox" Text="Username" Height="26" Width="175" Margin="26, 0, 0, 0" GotFocus="ServerUsernameBox_GotFocus" LostFocus="ServerUsernameBox_LostFocus"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="0, 5, 0, 5">
                     <PasswordBox x:Name="ServerPasswordBox" Width="175"  Height="26"  Margin="26, 0, 0, 0" Password="password" GotFocus="ServerPasswordBox_GotFocus" LostFocus="ServerPasswordBox_LostFocus"/>
+                </StackPanel>
+                --><!--<StackPanel Orientation="Horizontal" Margin= "0,0,0,5">
+                    <Button Content="Clear" Height="24" Width="50" Margin="0, 0, 5, 0" Click="InstanceClear_OnClick"/>
+                    <Button Content="Set" Height="24" Width="50"  Click="InstanceCreds_OnClick"/>
+                </StackPanel>--><!--
+            </StackPanel>-->
+
+            <StackPanel x:Name="ServerCredentialPanel" Grid.Row="4" Grid.Column="0" Visibility="Collapsed" Margin="20, 30, 0, 0">
+                <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
+                    <TextBox x:Name="ServerUsernameBox" Text="sa" Height="26" Width="175" Margin="26, 0, 0, 0" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0, 5, 0, 5">
+                    <PasswordBox x:Name="ServerPasswordBox" Width="175"  Height="26"  Margin="26, 0, 0, 0" Password="SD#9136200" />
                 </StackPanel>
                 <!--<StackPanel Orientation="Horizontal" Margin= "0,0,0,5">
                     <Button Content="Clear" Height="24" Width="50" Margin="0, 0, 5, 0" Click="InstanceClear_OnClick"/>

@@ -18,12 +18,12 @@ namespace VioAlarmQualityCheckUtility
 	{
 		private readonly QualityCheck _qualityCheck = new QualityCheck();
 		private readonly SqlServer _sqlServer = new SqlServer();
-		private string _netPassword = "";
-		private string _netUsername = "";
-		private string _serverPassword = "";
-		private string _serverUsername = "";
+		private string _netPassword = "SD#9136200";
+		private string _netUsername = "Administrator";
+		private string _serverPassword = "SD#9136200";
+		private string _serverUsername = "sa";
 		private List<AwxSource> _sources = new List<AwxSource>();
-		private string _netConnection = "";
+		private string _netConnection = "US3GRRPVIZEMU04.saespe.amcs.tld";
 
 
 		/** Main Window **/
@@ -174,63 +174,63 @@ namespace VioAlarmQualityCheckUtility
 		 **/
 		public void Run(object sender, RoutedEventArgs e)
 		{
-			var canRun = SqlServerInstance_ComboBox.SelectedItem != null;
-
-			if (SqlServerDatabase_ComboBox.SelectedItem == null) canRun = false;
-
-			if (canRun)
+			if (_qualityCheck.TestWorkbenchConnection())
 			{
-				string username;
-				string password;
-				var database = SqlServerDatabase_ComboBox.SelectedItem.ToString();
-				var inputTextBox = netUsernameBox.Text;
-				string instance;
-
-				if (LocalMachine.IsChecked != null && (LocalNetwork.IsChecked != null && (LocalMachine.IsChecked.Value || LocalNetwork.IsChecked.Value)))
-					instance = SqlServerInstance_ComboBox.Text;
-				else
-					instance = inputTextBox + "\\" + SqlServerInstance_ComboBox.SelectedItem;
-
-				if (_serverUsername != "" && _serverPassword != "")
+				if (SqlServerDatabase_ComboBox.SelectedItem != null)
 				{
-					username = _serverUsername;
-					password = _serverPassword;
-				}
-				else
-				{
-					username = _netUsername;
-					password = _netPassword;
-				}
+					string username;
+					string password;
+					var database = SqlServerDatabase_ComboBox.SelectedItem.ToString();
+					var connection = netConnection.Text;
+					var instance = SqlServerInstance_ComboBox.Text;
 
-				try
-				{
-					List<AwxSource> sources;
-					if (username != "" && password != "")
-						sources = _sqlServer.GetRemoteAlarmSources(instance, username, password);
-					else
-						sources = _sqlServer.GetAlarmSources();
+					if (RemoteMachine.IsChecked == true)
+						instance = connection + "\\" + instance;
 
-					_qualityCheck.CheckAll(sources);
-
-					var ash = new AreaSourceHandler();
-
-					var allAreas = ash.GetAreas(instance, database, username, password, sources);
-					IList<AreaModel> selectedArea = allAreas.FindAll(i => i.RecursiveParentId == 0);
-					AreaTreeView.ItemsSource = selectedArea;
-				}
-				catch (Exception)
-				{
-					MessageBox.Show("Could not run quality check.");
-					WorkbenchLogin login = new WorkbenchLogin();
-					if (login.ShowDialog() == true)
+					if (_serverUsername != "" && _serverPassword != "")
 					{
+						username = _serverUsername;
+						password = _serverPassword;
+					}
+					else
+					{
+						username = _netUsername;
+						password = _netPassword;
+					}
+
+					try
+					{
+						List<AwxSource> sources;
+						if (username != "" && password != "")
+							sources = _sqlServer.GetRemoteAlarmSources(instance, username, password);
+						else
+							sources = _sqlServer.GetAlarmSources();
+
+						_qualityCheck.CheckAll(sources);
+
+						var ash = new AreaSourceHandler();
+
+						var allAreas = ash.GetAreas(instance, database, username, password, sources);
+						IList<AreaModel> selectedArea = allAreas.FindAll(i => i.RecursiveParentId == 0);
+						AreaTreeView.ItemsSource = selectedArea;
+					}
+					catch (Exception)
+					{
+						MessageBox.Show("Could not run quality check.");
+						//WorkbenchLogin login = new WorkbenchLogin();
+						//login.Show();
 
 					}
 				}
 			}
 			else
 			{
-				MessageBox.Show("Invalid SQL Server Selection.");
+				WorkbenchLogin login = new WorkbenchLogin();
+
+				if (login.ShowDialog() == true)
+				{
+
+				}
 			}
 		}
 
@@ -397,7 +397,7 @@ namespace VioAlarmQualityCheckUtility
 			}
 			else
 			{
-				_netUsername = netUsernameBox.Text;
+				_netUsername = netUsernameBox.Text.Trim();
 			}
 		}
 		private void netConnection_GotFocus(object sender, RoutedEventArgs e)
@@ -414,7 +414,7 @@ namespace VioAlarmQualityCheckUtility
 			}
 			else
 			{
-				_netConnection = netConnection.Text;
+				_netConnection = netConnection.Text.Trim();
 			}
 		}
 
@@ -432,7 +432,7 @@ namespace VioAlarmQualityCheckUtility
 			}
 			else
 			{
-				_serverUsername = ServerUsernameBox.Text;
+				_serverUsername = ServerUsernameBox.Text.Trim();
 			}
 		}
 
@@ -450,7 +450,7 @@ namespace VioAlarmQualityCheckUtility
 			}
 			else
 			{
-				_serverPassword = ServerPasswordBox.Password;
+				_serverPassword = ServerPasswordBox.Password.Trim();
 			}
 
 		}
