@@ -168,8 +168,6 @@ namespace VioAlarmQualityCheckUtility.Class
 		}
 
 
-
-
 		// Functions: GetAlarmSources, GetRemoteAlarmSources, and QueryAwxSources         
 		// Description: These are all related to opening up a SQL connection to either a remote server or local SQL instance and querying the SQL DB for the sources.
 		// ==============================================================================================================================================================

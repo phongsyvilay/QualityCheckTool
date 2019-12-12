@@ -15,8 +15,14 @@ namespace VioAlarmQualityCheckUtility.Class
 			SqlDataReader reader;
 			List<Source2Area> s2a = new List<Source2Area>();
 			var temp = Properties.Settings.Default.SqlServerInstance;
-
 			SqlConnection connection;
+
+			areasList.Add(new AreaModel
+			{
+				Id = 0,
+				Name = "Not Assigned Area",
+				RecursiveParentId = 0
+			});
 
 
 			if (username == "")
@@ -24,8 +30,6 @@ namespace VioAlarmQualityCheckUtility.Class
 			else
 				connection = new SqlConnection($@"Data Source={instance}; Initial Catalog = {db}; User ID={username}; Password={password}");
 
-			
-			
 			using (connection)
 			{
 				try
@@ -61,7 +65,7 @@ namespace VioAlarmQualityCheckUtility.Class
 							if (area.RecursiveParentId != 0)
 							{
 								var tempArea = areasList.Find(t => t.Id == area.RecursiveParentId);
-								tempArea.Children.Add(area);
+								tempArea?.Children.Add(area);
 							}
 
 							areasList.Add(area);
@@ -109,17 +113,70 @@ namespace VioAlarmQualityCheckUtility.Class
 
 		public void AssignSourceToArea(List<AwxSource> sources, List<AreaModel> areas, List<Source2Area> s2a)
 		{
-			foreach (AwxSource temp in sources)
+			for (int i = 0; i < sources.Count; i++)
 			{
-				var source = temp;
-				Source2Area source2Area = s2a.Find(s => s.SourceID == temp.ID);
+				try
+				{
+					var source = sources[i];
+					var source2Areas = s2a.FindAll(s => s.SourceID == source.ID);
 
-				AreaModel area = areas.Find(a => a.Id == source2Area.AreaID);
+					if (source2Areas.Count == 0)
+					{
+						var noArea = areas.Find(a => a.Name == "Not Assigned Area");
 
-				area.SourcesList.Add(source);
+						noArea.SourcesList.Add(new AwxSource
+						{
+							AreaName = noArea.Name,
+							ID = source.ID,
+							Input1 = source.Input1,
+							Name = source.Name
+						});
+					}
+					else
+					{
+						foreach (var source2Area in source2Areas)
+						{
+							AwxSource newSource = new AwxSource
+							{
+								AreaName = "",
+								ID = source.ID,
+								Input1 = source.Input1,
+								Name = source.Name
+							};
+
+							var area = areas.Find(a => a.Id == source2Area.AreaID);
+
+							if (area.RecursiveParentId == 0)
+							{
+								newSource.AreaName = area.Name;
+							}
+							else
+							{
+								AreaModel tempArea = areas.Find(parent => parent.Id == area.RecursiveParentId);
+
+								var parentAreasString = tempArea.Name;
+
+								while (tempArea.RecursiveParentId != 0)
+								{
+									tempArea = areas.Find(a => a.Id == tempArea.RecursiveParentId);
+									parentAreasString = tempArea.Name + "\\" + parentAreasString;
+								}
+
+								newSource.AreaName = parentAreasString;
+
+							}
+
+							area.SourcesList.Add(newSource);
+						}
+					}
+				}
+				catch
+				{
+					MessageBox.Show("AssignSourceToArea Error");
+				}
+
 			}
 		}
-
 		
 	}
 }

@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
 using System.Windows;
 using Ico.Fwx.ClientWrapper;
 using VioAlarmQualityCheckUtility.Models;
+using VioAlarmQualityCheckUtility.Windows;
 
 namespace VioAlarmQualityCheckUtility.Class
 {
@@ -22,6 +25,16 @@ namespace VioAlarmQualityCheckUtility.Class
 		{
 			try
 			{
+				if (!TestWorkbenchConnection())
+				{
+					WorkbenchLogin login = new WorkbenchLogin();
+
+					if (login.ShowDialog() == true)
+					{
+
+					}
+				}
+
 				var awxSourceList = sources;
 				var ascEquipmentPropertyList = new List<AscEquipmentProperty>();
 
@@ -34,36 +47,73 @@ namespace VioAlarmQualityCheckUtility.Class
 
 				readDoneDelegate = ReadDoneCallBack;
 
-				foreach (var item in awxSourceList)
+				foreach (AwxSource item in awxSourceList)
 					if (item.Input1.Contains("@"))
 					{
-						var clean = item.Input1.Replace("x=", "")
-							.Replace("(", "")
-							.Replace(")", "")
-							.Replace("{", "")
-							.Replace("}", "")
-							.Replace("|", "")
-							.Replace("&", "")
-							.Replace("!", "");
+						string[] points = new string[] { };
+						string newWord;
+						string pattern = @"[\(\)\{\}\|\&\!]";
 
-						var points = clean.Split('@');
 
-						for (var i = 0; i < points.Length - 1; i++)
+						if (item.Input1.Contains("x="))
 						{
-							var reportModel = new ReportModel
+
+							report.Add(new ReportModel
 							{
 								ID = id,
 								Type = "Alarm",
+								Area = item.AreaName,
 								TagName = item.Name,
-								PointName = "@" + points[i + 1].Trim(),
-								PointStatus = "Updating..."
-							};
+								PointName = item.Input1,
+								PointStatus = ""
+							});
+
+							points = item.Input1.Split('@');
+
+							if (points.Length != 2)
+								points = points.Skip(1).ToArray();
+
+						}
+						else
+							points = item.Input1.Split('@');
+
+						for (var i = 0; i < points.Length - 1; i++)
+						{
+							ReportModel reportModel;
+
+							if (points.Length == 2)
+							{
+								newWord = "@" + Regex.Replace(points[i + 1], pattern, "").Trim();
+								reportModel = new ReportModel
+								{
+									ID = id,
+									Type = "Alarm",
+									Area = item.AreaName,
+									TagName = item.Name,
+									PointName = newWord,
+									PointStatus = "Updating..."
+								};
+							}
+							else
+							{
+								newWord = "@" + Regex.Replace(points[i], pattern, "").Trim();
+								reportModel = new ReportModel
+								{
+									ID = id,
+									Type = "Alarm",
+									Area = "",
+									TagName = item.Name,
+									PointName = newWord,
+									PointStatus = "Updating..."
+								};
+							}
 
 							report.Add(reportModel);
 							id++;
 
-							ReadPointAsync("@" + points[i + 1].Trim());
+							ReadPointAsync(newWord);
 						}
+
 					}
 
 				((MainWindow)Application.Current.MainWindow).Report.ItemsSource = report;
@@ -90,6 +140,33 @@ namespace VioAlarmQualityCheckUtility.Class
 
 			}
 		}
+
+		// Read Done Call Back
+		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		private void ReadDoneCallBack(ReadDoneResult result)
+		{
+			var data = (List<ReportModel>)((MainWindow)Application.Current.MainWindow).Report.ItemsSource;
+
+			if (data != null)
+				foreach (var item in data)
+					if (item.PointName == result.UserState.ToString())
+						item.PointStatus = result.Value.Status.ToString();
+
+			((MainWindow)Application.Current.MainWindow).Report.ItemsSource = data;
+			((MainWindow)Application.Current.MainWindow).Report.Items.Refresh();
+		}
+
+		// Read Point Async
+		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		public void ReadPointAsync(string pointName)
+		{
+			fwxClientWrapper.ReadAsync(pointName, readDoneDelegate, pointName);
+		}
+
 
 		//readDoneDelegate = new ReadDoneDelegate(ReadDoneCallback);
 
@@ -146,31 +223,7 @@ namespace VioAlarmQualityCheckUtility.Class
 		//}
 
 
-		// Read Point Async
-		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		public void ReadPointAsync(string pointName)
-		{
-			fwxClientWrapper.ReadAsync(pointName, readDoneDelegate, pointName);
-		}
 
 
-		// Read Done Call Back
-		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		private void ReadDoneCallBack(ReadDoneResult result)
-		{
-			var data = (List<ReportModel>)((MainWindow)Application.Current.MainWindow).Report.ItemsSource;
-
-			if (data != null)
-				foreach (var item in data)
-					if (item.PointName == result.UserState.ToString())
-						item.PointStatus = result.Value.Status.ToString();
-
-			((MainWindow)Application.Current.MainWindow).Report.ItemsSource = data;
-			((MainWindow)Application.Current.MainWindow).Report.Items.Refresh();
-		}
 	}
 }

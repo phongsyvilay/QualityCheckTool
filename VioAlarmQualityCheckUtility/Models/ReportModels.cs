@@ -6,12 +6,13 @@ using System.Threading.Tasks;
 
 namespace VioAlarmQualityCheckUtility.Models
 {
-    public class ReportModel
-    {
-        public int ID { get; set; }
-        public string Type { get; set; }
-        public string TagName { get; set; }
-        public string PointName { get; set; }
-        public string PointStatus { get; set; }
-    }
+	public class ReportModel
+	{
+		public int ID { get; set; }
+		public string Type { get; set; }
+		public string Area { get; set; }
+		public string TagName { get; set; }
+		public string PointName { get; set; }
+		public string PointStatus { get; set; }
+	}
 }

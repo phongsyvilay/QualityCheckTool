@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Configuration;
 using System.Windows;
 using System.Windows.Controls;
 using Ico.Fwx.ClientWrapper;
@@ -14,17 +15,19 @@ namespace VioAlarmQualityCheckUtility
 	/// <summary>
 	///     Interaction logic for MainWindow.xaml
 	/// </summary>
+	///
 	public partial class MainWindow
 	{
 		private readonly QualityCheck _qualityCheck = new QualityCheck();
 		private readonly SqlServer _sqlServer = new SqlServer();
-		private string _netPassword = "SD#9136200";
-		private string _netUsername = "Administrator";
-		private string _serverPassword = "SD#9136200";
-		private string _serverUsername = "sa";
 		private List<AwxSource> _sources = new List<AwxSource>();
-		private string _netConnection = "US3GRRPVIZEMU04.saespe.amcs.tld";
+		List<AreaModel> _allAreas = new List<AreaModel>();
 
+		private string _netPassword = "";
+		private string _netUsername = "";
+		private string _netConnection = "";
+		private string _serverPassword = "";
+		private string _serverUsername = "";
 
 		/** Main Window **/
 		public MainWindow()
@@ -55,19 +58,15 @@ namespace VioAlarmQualityCheckUtility
 			SelectBox.Visibility = Visibility.Visible;
 		}
 
-		/** Sets the server's authentication credentials from the view's textbox **/
-		private void SetServerInfo()
-		{
-			_serverUsername = ServerUsernameBox.Text;
-			_serverPassword = ServerPasswordBox.Password;
-		}
-
-		/**  **/
+		/** Generates all the sources that are connected with the selected area and its children **/
 		public List<AwxSource> RecurseList(AreaModel area)
 		{
 			try
 			{
-				foreach (var source in area.SourcesList) _sources.Add(source);
+				foreach (var source in area.SourcesList)
+				{
+					_sources.Add(source);
+				}
 
 				foreach (var child in area.Children)
 				{
@@ -88,6 +87,74 @@ namespace VioAlarmQualityCheckUtility
 			return _sources;
 		}
 
+		/** Part of the searching tag function. This opens the open in the treeview if it is found within
+		 * the current itemcontrol being recursed **/
+		public static void OpenTreeViewItem(ItemsControl ic, object area)
+		{
+
+			ic.UpdateLayout();
+
+			TreeViewItem tvi = ic.ItemContainerGenerator.ContainerFromItem(area) as TreeViewItem;
+
+			if (tvi == null)
+			{
+				foreach (object i in ic.Items)
+				{
+					//Get the TreeViewItem associated with the iterated object model
+					TreeViewItem tvi2 = ic.ItemContainerGenerator.ContainerFromItem(i) as TreeViewItem;
+
+					if (tvi2 == null)
+						break;
+					else
+						OpenTreeViewItem(tvi2, area);
+					
+				}
+			}
+			else
+			{
+				tvi.IsExpanded = true;
+				tvi.IsSelected = true;
+			}
+		}
+
+		/** This creates the list of parents that need to be found within the treeview. It is starting with the
+		 * root that needs to be found first, then working down a tree until the tag's parent is found **/
+		private List<AreaModel> FindListOfParents(string searchString, string searchProperty)
+		{
+			List<AreaModel> returnedAreaModels = new List<AreaModel>();
+
+			foreach (AreaModel area in ((List<AreaModel>)AreaTreeView.ItemsSource))
+			{
+				List<AwxSource> sources = RecurseList(area);
+				try
+				{
+					AwxSource source = searchProperty == "Name"
+						? sources.Find(s => s.Name == searchString)
+						: sources.Find(s => s.Input1 == searchString);
+
+					if (source != null)
+					{
+						var parentAreas = source.AreaName.Split('\\');
+
+						foreach (var parentArea in parentAreas)
+						{
+							AreaModel tempArea = _allAreas.Find(a => a.Name == parentArea);
+							returnedAreaModels.Add(tempArea);
+						}
+
+						break;
+					}
+
+				}
+				catch (Exception ex)
+				{
+					MessageBox.Show(ex.Message);
+				}
+			}
+
+			return returnedAreaModels;
+		}
+
 		/************************************************************************
 		 * Button action and event functions that are triggered from the view
 		 ************************************************************************/
@@ -95,7 +162,7 @@ namespace VioAlarmQualityCheckUtility
 		/** Searches for sql server instances for the computer that is being targeted **/
 		private void SearchButton_Click(object sender, RoutedEventArgs e)
 		{
-			SearchButtonUiClear();
+			SearchButtonUIClear();
 
 			if (LocalMachine.IsChecked.Value)
 			{
@@ -127,7 +194,7 @@ namespace VioAlarmQualityCheckUtility
 		/** If the search button is clicked this function is clearing the combo boxes and the text hovering over
 		 * the combo boxes
 		 **/
-		private void SearchButtonUiClear()
+		private void SearchButtonUIClear()
 		{
 			SqlServerInstance_ComboBox.SelectionChanged -= SqlServerInstance_ComboBox_SelectionChanged;
 			SqlServerDatabase_ComboBox.SelectionChanged -= SqlServerDatabase_ComboBox_SelectionChanged;
@@ -143,28 +210,6 @@ namespace VioAlarmQualityCheckUtility
 
 		}
 
-		/** sets the computer credentials based on the text in the textblocks**/
-		private void ButtonBase_OnClick(object sender, RoutedEventArgs e)
-		{
-			_netUsername = netUsernameBox.Text;
-			_netPassword = netPasswordBox.Password;
-		}
-
-		/** Sets the server information **/
-		private void InstanceCreds_OnClick(object sender, RoutedEventArgs e)
-		{
-			SetServerInfo();
-		}
-
-		/** Sets the server information to empty**/
-		private void InstanceClear_OnClick(object sender, RoutedEventArgs e)
-		{
-			ServerUsernameBox.Text = "";
-			ServerPasswordBox.Password = "";
-			SetServerInfo();
-
-		}
-
 		/** This button first is checking that items were selected
 		 * in the combo boxes. Then it is grabbing those inputs no matter what they are. If the search
 		 * box is looking at the local computer or local network than it is using the server instance name
@@ -172,68 +217,105 @@ namespace VioAlarmQualityCheckUtility
 		 * Grabs the sources from the DB, then checks the quality of the tags.
 		 *  
 		 **/
+
 		public void Run(object sender, RoutedEventArgs e)
 		{
-			if (_qualityCheck.TestWorkbenchConnection())
+			if (SqlServerDatabase_ComboBox.SelectedItem != null)
 			{
-				if (SqlServerDatabase_ComboBox.SelectedItem != null)
+				string username;
+				string password;
+				var database = SqlServerDatabase_ComboBox.SelectedItem.ToString();
+				var connection = NetConnection.Text;
+				var instance = SqlServerInstance_ComboBox.Text;
+
+				if (RemoteMachine.IsChecked == true)
+					instance = connection + "\\" + instance;
+
+				if (_serverUsername != "" && _serverPassword != "")
 				{
-					string username;
-					string password;
-					var database = SqlServerDatabase_ComboBox.SelectedItem.ToString();
-					var connection = netConnection.Text;
-					var instance = SqlServerInstance_ComboBox.Text;
-
-					if (RemoteMachine.IsChecked == true)
-						instance = connection + "\\" + instance;
-
-					if (_serverUsername != "" && _serverPassword != "")
-					{
-						username = _serverUsername;
-						password = _serverPassword;
-					}
-					else
-					{
-						username = _netUsername;
-						password = _netPassword;
-					}
-
-					try
-					{
-						List<AwxSource> sources;
-						if (username != "" && password != "")
-							sources = _sqlServer.GetRemoteAlarmSources(instance, username, password);
-						else
-							sources = _sqlServer.GetAlarmSources();
-
-						_qualityCheck.CheckAll(sources);
-
-						var ash = new AreaSourceHandler();
-
-						var allAreas = ash.GetAreas(instance, database, username, password, sources);
-						IList<AreaModel> selectedArea = allAreas.FindAll(i => i.RecursiveParentId == 0);
-						AreaTreeView.ItemsSource = selectedArea;
-					}
-					catch (Exception)
-					{
-						MessageBox.Show("Could not run quality check.");
-						//WorkbenchLogin login = new WorkbenchLogin();
-						//login.Show();
-
-					}
+					username = _serverUsername;
+					password = _serverPassword;
 				}
-			}
-			else
-			{
-				WorkbenchLogin login = new WorkbenchLogin();
-
-				if (login.ShowDialog() == true)
+				else
 				{
+					username = _netUsername;
+					password = _netPassword;
+				}
+
+				try
+				{
+					if (username != "" && password != "")
+						_sources = _sqlServer.GetRemoteAlarmSources(instance, username, password);
+					else
+						_sources = _sqlServer.GetAlarmSources();
+
+					var ash = new AreaSourceHandler();
+					_allAreas = ash.GetAreas(instance, database, username, password, _sources);
+					IList<AreaModel> selectedArea = _allAreas.FindAll(i => i.RecursiveParentId == 0);
+
+					_sources.Clear();
+
+					foreach (var areaModel in selectedArea)
+					{
+						RecurseList(areaModel);
+					}
+
+					_qualityCheck.CheckAll(_sources);
+
+					AreaTreeView.ItemsSource = selectedArea;
+				}
+				catch (Exception ex)
+				{
+					MessageBox.Show(ex.ToString());
+					MessageBox.Show("Could not run quality check.");
 
 				}
 			}
 		}
 
+		/** Search button that is searching for the input which is a tag **/
+		private void TagSearchButton_Click(object sender, RoutedEventArgs e)
+		{
+			try
+			{
+				string tag = TagSearchbox.Text;
+
+				if (tag != "")
+				{
+					if(SearchExact.IsChecked == true)
+						TagSearchExactRadio_Checked(tag);
+
+					if(SearchContains.IsChecked == true)
+						TagSearchContainsRadio_Checked(tag);
+				}
+			}
+			catch (Exception )
+			{
+				MessageBox.Show("Tag search error.");
+			}
+		}
+
+
+		private void PointSearchButton_Click(object sender, RoutedEventArgs e)
+		{
+			try
+			{
+				string tag = PointSearchbox.Text;
+
+				if (tag != "")
+				{
+					if (PointExact.IsChecked == true)
+						PointSearchExactRadio_Checked(tag);
+
+					if (PointContains.IsChecked == true)
+						PointSearchContainsRadio_Checked(tag);
+				}
+			}
+			catch (Exception)
+			{
+				MessageBox.Show("Point name search error.");
+			}
+		}
 
 		/************************************************************************
 		 * Radio button action and event functions that are triggered from the view
@@ -245,14 +327,21 @@ namespace VioAlarmQualityCheckUtility
 			if (sender is RadioButton rb && rb.Name.Equals("RemoteMachine"))
 			{
 				NetCredentialPanel.Visibility = Visibility.Visible;
-				netConnection.Visibility = Visibility.Visible;
+				NetConnection.Visibility = Visibility.Visible;
 			}
 			else
 			{
 				if (NetCredentialPanel != null)
 				{
 					NetCredentialPanel.Visibility = Visibility.Collapsed;
-					netConnection.Visibility = Visibility.Collapsed;
+					NetConnection.Visibility = Visibility.Collapsed;
+					_netPassword = "";
+					_netUsername = "";
+					_netConnection = "";
+					NetConnection.Text = "Name or IP Address";
+					NetUsernameBox.Text = "Login";
+					NetPasswordBox.Password = "Password";
+
 				}
 			}
 		}
@@ -269,15 +358,96 @@ namespace VioAlarmQualityCheckUtility
 
 				if (ServerCredentialPanel != null)
 				{
-					ServerCredentialPanel.Visibility = Visibility.Hidden;
+					ServerCredentialPanel.Visibility = Visibility.Collapsed;
+					_serverUsername = "";
+					_serverPassword = "";
+					ServerUsernameBox.Text = "Username";
+					ServerPasswordBox.Password = "Password";
 
-					ServerUsernameBox.Text = "";
-					ServerPasswordBox.Password = "";
-
-					SetServerInfo();
 				}
 			}
 		}
+
+		/** The following four functions are based off of rather the radio button is selected, but
+		 * do not effect the GUI. **/
+		private void TagSearchContainsRadio_Checked(string tag)
+		{
+			List<AwxSource> foundSources = new List<AwxSource>();
+
+			foreach (AreaModel area in ((List<AreaModel>)AreaTreeView.ItemsSource))
+			{
+				if (_sources.Count != 0)
+					_sources.Clear();
+
+				List<AwxSource> sources = RecurseList(area);
+
+				foreach (var awxSource in sources)
+				{
+					if (awxSource.Name.Contains(tag))
+						foundSources.Add(awxSource);
+				}
+			}
+
+			Report.ItemsSource = _qualityCheck.CheckAll(foundSources);
+		}
+
+		private void TagSearchExactRadio_Checked(string tag)
+		{
+			List<AreaModel> areas = FindListOfParents(tag, "Name");
+
+			if (areas.Count == 0)
+			{
+				MessageBox.Show("Could not find tag.");
+			}
+			else
+			{
+				foreach (var areaModel in areas)
+				{
+					OpenTreeViewItem(AreaTreeView, areaModel);
+				}
+			}
+		}
+
+		private void PointSearchExactRadio_Checked(string pointName)
+		{
+			List<AreaModel> areas = FindListOfParents(pointName, "Input1");
+
+			if (areas.Count == 0)
+			{
+				MessageBox.Show("Could not find tag.");
+			}
+			else
+			{
+				foreach (var areaModel in areas)
+				{
+					OpenTreeViewItem(AreaTreeView, areaModel);
+				}
+			}
+		}
+
+		private void PointSearchContainsRadio_Checked(string pointName)
+		{
+			List<AwxSource> foundSources = new List<AwxSource>();
+
+			foreach (AreaModel area in ((List<AreaModel>) AreaTreeView.ItemsSource))
+			{
+				if (_sources.Count != 0)
+					_sources.Clear();
+
+				List<AwxSource> sources = RecurseList(area);
+
+				foreach (var awxSource in sources)
+				{
+					if (awxSource.Input1.Contains(pointName))
+						foundSources.Add(awxSource);
+				}
+			}
+
+			Report.ItemsSource = _qualityCheck.CheckAll(foundSources);
+
+		}
+
+
 
 		/************************************************************************
 		 * Combo boxes selection actions
@@ -293,7 +463,7 @@ namespace VioAlarmQualityCheckUtility
 				Settings.Default.SqlServerInstance = SqlServerInstance_ComboBox.SelectedItem.ToString();
 
 
-				if (LocalMachine.IsChecked == true)
+				if (LocalMachine.IsChecked == true || LocalNetwork.IsChecked == true)
 				{
 					if (_serverUsername == "" && _serverPassword == "")
 						SqlServerDatabase_ComboBox.ItemsSource = SqlServer.GetLocalSqlInstanceDatabases();
@@ -306,10 +476,10 @@ namespace VioAlarmQualityCheckUtility
 				{
 					if (_serverUsername == "" && _serverPassword == "")
 						SqlServerDatabase_ComboBox.ItemsSource = SqlServer.GetSqlInstanceDatabases(
-							netConnection.Text + "\\" + Settings.Default.SqlServerInstance, _netUsername, _netPassword);
+							_netConnection + "\\" + Settings.Default.SqlServerInstance, _netUsername, _netPassword);
 					else
 						SqlServerDatabase_ComboBox.ItemsSource = SqlServer.GetSqlInstanceDatabases(
-							netConnection.Text + "\\" + Settings.Default.SqlServerInstance, _serverUsername,
+							_netConnection + "\\" + Settings.Default.SqlServerInstance, _serverUsername,
 							_serverPassword);
 				}
 
@@ -358,7 +528,16 @@ namespace VioAlarmQualityCheckUtility
 
 			_sources = RecurseList((AreaModel)e.NewValue);
 
-			Report.ItemsSource = _qualityCheck.CheckAll(_sources);
+			if (_sources.Count == 0)
+			{
+				Report.ItemsSource = null;
+				Overlay.Visibility = Visibility.Visible;
+			}
+			else
+			{
+				Report.ItemsSource = _qualityCheck.CheckAll(_sources);
+				Overlay.Visibility = Visibility.Collapsed;
+			}
 		}
 
 		/************************************************************************
@@ -367,54 +546,54 @@ namespace VioAlarmQualityCheckUtility
 
 		private void netPasswordBox_GotFocus(object sender, RoutedEventArgs e)
 		{
-			netPasswordBox.Password = _netPassword == "" ? "" : _netPassword;
+			NetPasswordBox.Password = _netPassword == "" ? "" : _netPassword;
 		}
 
 		private void netPasswordBox_LostFocus(object sender, RoutedEventArgs e)
 		{
-			if (netPasswordBox.Password == "")
+			if (NetPasswordBox.Password == "")
 			{
-				netPasswordBox.Password = "Password";
+				NetPasswordBox.Password = "Password";
 				_netPassword = "";
 			}
 			else
 			{
-				_netPassword = netPasswordBox.Password;
+				_netPassword = NetPasswordBox.Password;
 			}
 		}
 
 		private void netUsernameBox_GotFocus(object sender, RoutedEventArgs e)
 		{
-			netUsernameBox.Text = _netUsername == "" ? "" : _netUsername;
+			NetUsernameBox.Text = _netUsername == "" ? "" : _netUsername;
 		}
 
 		private void netUsernameBox_LostFocus(object sender, RoutedEventArgs e)
 		{
-			if (netUsernameBox.Text == "")
+			if (NetUsernameBox.Text == "")
 			{
-				netUsernameBox.Text = "Login";
+				NetUsernameBox.Text = "Login";
 				_netUsername = "";
 			}
 			else
 			{
-				_netUsername = netUsernameBox.Text.Trim();
+				_netUsername = NetUsernameBox.Text.Trim();
 			}
 		}
 		private void netConnection_GotFocus(object sender, RoutedEventArgs e)
 		{
-			netConnection.Text = _netConnection == "" ? "" : _netConnection;
+			NetConnection.Text = _netConnection == "" ? "" : _netConnection;
 		}
 
 		private void netConnection_LostFocus(object sender, RoutedEventArgs e)
 		{
-			if (netConnection.Text == "")
+			if (NetConnection.Text == "")
 			{
-				netConnection.Text = "Name or IP Address";
+				NetConnection.Text = "Name or IP Address";
 				_netConnection = "";
 			}
 			else
 			{
-				_netConnection = netConnection.Text.Trim();
+				_netConnection = NetConnection.Text.Trim();
 			}
 		}
 
@@ -452,6 +631,41 @@ namespace VioAlarmQualityCheckUtility
 			{
 				_serverPassword = ServerPasswordBox.Password.Trim();
 			}
+
+		}
+
+		private void TagSearchbox_GotFocus(object sender, RoutedEventArgs e)
+		{
+			TagSearchbox.Text = TagSearchbox.Text == "Tag Name" ? "" : TagSearchbox.Text;
+		}
+
+		private void TagSearchbox_LostFocus(object sender, RoutedEventArgs e)
+		{
+			if (TagSearchbox.Text == "")
+			{
+				TagSearchbox.Text = "Tag Name";
+			}
+			else
+			{
+				TagSearchbox.Text = TagSearchbox.Text.Trim();
+			}
+		}
+
+		private void PointSearchbox_LostFocus(object sender, RoutedEventArgs e)
+		{
+			if (PointSearchbox.Text == "")
+			{
+				PointSearchbox.Text = "Point Name";
+			}
+			else
+			{
+				PointSearchbox.Text = PointSearchbox.Text.Trim();
+			}
+		}
+
+		private void PointSearchbox_GotFocus(object sender, RoutedEventArgs e)
+		{
+			PointSearchbox.Text = PointSearchbox.Text == "Point Name" ? "" : PointSearchbox.Text;
 
 		}
 	}

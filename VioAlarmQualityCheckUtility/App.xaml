@@ -5,21 +5,37 @@
     <Application.Resources>
         <Style TargetType="Button">
             <Setter Property="Background" Value="#046B99" />
-
             <Setter Property="Foreground" Value="White" />
-
-            <Setter Property="BorderBrush" Value="#707070" />
-
+            <Setter Property="BorderBrush" Value="#046B99" />
+            <Setter Property="Height" Value="25" />
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect BlurRadius="2" ShadowDepth="1"/>
+                </Setter.Value>
+            </Setter>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type Button}">
                         <Grid>
-                            <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="12" Background="{TemplateBinding Background}" />
+                            <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0" CornerRadius="11.5" Background="{TemplateBinding Background}" />
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                         </Grid>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#04587E"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Effect">
+                        <Setter.Value>
+                            <DropShadowEffect BlurRadius="2" ShadowDepth="0.5"/>
+                        </Setter.Value>
+                    </Setter>
+                </Trigger>
+            </Style.Triggers>
         </Style>
 
         <SolidColorBrush x:Key="TextBox.Static.Border" Color="#FFABAdB3"/>
@@ -111,29 +127,30 @@
             </Style.Triggers>
         </Style>
 
+        <Style TargetType="{x:Type DataGrid}">
+            <Setter Property="AlternatingRowBackground" Value="WhiteSmoke" />
+            <Setter Property="AlternationCount" Value="2"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#C4C4C4"/>
+            <Setter Property="VerticalGridLinesBrush" Value="#C4C4C4"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
 
+        <Style TargetType="{x:Type DataGridColumnHeader}">
+            <Setter Property="Background" Value="#046B99"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="BorderBrush" Value="#C4C4C4"/>
+            <Setter Property="BorderThickness" Value="0,0,1,0"/>
+            <Setter Property="Padding" Value="5"/>
+        </Style>
 
-        <!--<Style TargetType="{x:Type TextBox}">
-            <Setter Property="Foreground" Value="#95989A" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type TextBox}">
-                        <Border Background="{TemplateBinding Background}" BorderBrush="#95989A" BorderThickness="1" CornerRadius="3" ></Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>-->
+        <Style TargetType="{x:Type TreeView}">
+            <Style.Resources>
+                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#707070" />
+            </Style.Resources>
+        </Style>
 
-        <!--<Style TargetType="{x:Type PasswordBox}">
-            <Setter Property="Template">
-                <Setter.Value>
-                <ControlTemplate TargetType="{x:Type PasswordBox}">
-                    <Border Background="{TemplateBinding Background}" BorderBrush="#95989A" BorderThickness="1" CornerRadius="3" ></Border>
-                    
-                </ControlTemplate>
-                    </Setter.Value>
-            </Setter>
-        </Style>-->
-
+        <Style TargetType="{x:Type TreeViewItem}">
+            <Setter Property="Padding" Value="1"/>
+        </Style>
     </Application.Resources>
 </Application>
