@@ -57,6 +57,7 @@ namespace VioAlarmQualityCheckUtility.Class
 
 						if (item.Input1.Contains("x="))
 						{
+							var input1 = item.Input1.Replace("x=", "").Trim();
 
 							report.Add(new ReportModel
 							{
@@ -65,25 +66,20 @@ namespace VioAlarmQualityCheckUtility.Class
 								Area = item.AreaName,
 								TagName = item.Name,
 								PointName = item.Input1,
-								PointStatus = item.Input1.Replace("x=", "").Trim()
+								PointStatus =input1.Replace("quality", "").Trim()
 							});
-
-							points = item.Input1.Split('@');
-
-							if (points.Length != 2)
-								points = points.Skip(1).ToArray();
-
 						}
-						else
-							points = item.Input1.Split('@');
 
-						for (var i = 0; i < points.Length - 1; i++)
+						points = item.Input1.Split('@');
+
+							points = points.Skip(1).ToArray();
+
+
+						for (var i = 0; i < points.Length ; i++)
 						{
 							ReportModel reportModel;
 
-							if (points.Length == 2)
-							{
-								newWord = "@" + Regex.Replace(points[i + 1], pattern, "").Trim();
+								newWord = "@" + Regex.Replace(points[i], pattern, "").Trim();
 								reportModel = new ReportModel
 								{
 									ID = id,
@@ -93,20 +89,6 @@ namespace VioAlarmQualityCheckUtility.Class
 									PointName = newWord,
 									PointStatus = "Updating..."
 								};
-							}
-							else
-							{
-								newWord = "@" + Regex.Replace(points[i], pattern, "").Trim();
-								reportModel = new ReportModel
-								{
-									ID = id,
-									Type = "Alarm",
-									Area = "",
-									TagName = item.Name,
-									PointName = newWord,
-									PointStatus = "Updating..."
-								};
-							}
 
 							report.Add(reportModel);
 							id++;
@@ -115,7 +97,7 @@ namespace VioAlarmQualityCheckUtility.Class
 						}
 					}
 
-				((MainWindow)Application.Current.MainWindow).Report.ItemsSource = report;
+				//((MainWindow)Application.Current.MainWindow).Report.ItemsSource = report;
 
 				return report;
 			}
@@ -125,6 +107,8 @@ namespace VioAlarmQualityCheckUtility.Class
 			}
 		}
 
+		/** This is testing the connection to workbench. This is used in the checkall function so that it is tested before trying to check quality of tags.
+		 *	If the connection is bad it will produce the string that is being checked for in the function. **/
 		public bool TestWorkbenchConnection()
 		{
 			try
@@ -157,13 +141,27 @@ namespace VioAlarmQualityCheckUtility.Class
 
 					}
 
-					if (item.PointName.Contains(result.UserState.ToString()))
+					if (item.PointName != result.UserState.ToString() && item.PointName.Contains(result.UserState.ToString()))
 					{
 						item.PointStatus = item.PointStatus.Replace(result.UserState.ToString(), result.Value.Status.ToString());
+						if (item.PointStatus.Contains("Bad"))
+						{
+							item.PointStatus = "Bad";
+						}
+						else
+						{
+							string pattern = @"[\(\)\{\}\|\&\!]";
+							item.PointStatus = Regex.Replace(item.PointStatus, pattern, "");
+
+							if (!item.PointStatus.Contains("@"))
+							{
+								item.PointStatus = "Good";
+							}
+						}
 					}
 				}
 
-			((MainWindow)Application.Current.MainWindow).Report.ItemsSource = data;
+			//((MainWindow)Application.Current.MainWindow).Report.ItemsSource = data;
 			((MainWindow)Application.Current.MainWindow).Report.Items.Refresh();
 		}
 
