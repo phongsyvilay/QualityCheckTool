@@ -87,74 +87,6 @@ namespace VioAlarmQualityCheckUtility
 			return _sources;
 		}
 
-		/** Part of the searching tag function. This opens the open in the treeview if it is found within
-		 * the current itemcontrol being recursed **/
-		public static void OpenTreeViewItem(ItemsControl ic, object area)
-		{
-
-			ic.UpdateLayout();
-
-			TreeViewItem tvi = ic.ItemContainerGenerator.ContainerFromItem(area) as TreeViewItem;
-
-			if (tvi == null)
-			{
-				foreach (object i in ic.Items)
-				{
-					//Get the TreeViewItem associated with the iterated object model
-					TreeViewItem tvi2 = ic.ItemContainerGenerator.ContainerFromItem(i) as TreeViewItem;
-
-					if (tvi2 == null)
-						break;
-					else
-						OpenTreeViewItem(tvi2, area);
-					
-				}
-			}
-			else
-			{
-				tvi.IsExpanded = true;
-				tvi.IsSelected = true;
-			}
-		}
-
-		/** This creates the list of parents that need to be found within the treeview. It is starting with the
-		 * root that needs to be found first, then working down a tree until the tag's parent is found **/
-		private List<AreaModel> FindListOfParents(string searchString, string searchProperty)
-		{
-			List<AreaModel> returnedAreaModels = new List<AreaModel>();
-
-			foreach (AreaModel area in ((List<AreaModel>)AreaTreeView.ItemsSource))
-			{
-				List<AwxSource> sources = RecurseList(area);
-				try
-				{
-					AwxSource source = searchProperty == "Name"
-						? sources.Find(s => s.Name == searchString)
-						: sources.Find(s => s.Input1 == searchString);
-
-					if (source != null)
-					{
-						var parentAreas = source.AreaName.Split('\\');
-
-						foreach (var parentArea in parentAreas)
-						{
-							AreaModel tempArea = _allAreas.Find(a => a.Name == parentArea);
-							returnedAreaModels.Add(tempArea);
-						}
-
-						break;
-					}
-
-				}
-				catch (Exception ex)
-				{
-					MessageBox.Show(ex.Message);
-				}
-			}
-
-			return returnedAreaModels;
-		}
-
 		/************************************************************************
 		 * Button action and event functions that are triggered from the view
 		 ************************************************************************/
@@ -260,9 +192,10 @@ namespace VioAlarmQualityCheckUtility
 						RecurseList(areaModel);
 					}
 
-					_qualityCheck.CheckAll(_sources);
+					
 
 					AreaTreeView.ItemsSource = selectedArea;
+					Report.ItemsSource  = _qualityCheck.CheckAll(_sources);
 				}
 				catch (Exception ex)
 				{
@@ -282,11 +215,7 @@ namespace VioAlarmQualityCheckUtility
 
 				if (tag != "")
 				{
-					if(SearchExact.IsChecked == true)
-						TagSearchExactRadio_Checked(tag);
-
-					if(SearchContains.IsChecked == true)
-						TagSearchContainsRadio_Checked(tag);
+					TagSearch(tag, SearchExact.IsChecked == true ? "exact" : "contains");
 				}
 			}
 			catch (Exception )
@@ -304,11 +233,8 @@ namespace VioAlarmQualityCheckUtility
 
 				if (tag != "")
 				{
-					if (PointExact.IsChecked == true)
-						PointSearchExactRadio_Checked(tag);
-
-					if (PointContains.IsChecked == true)
-						PointSearchContainsRadio_Checked(tag);
+					if(tag != "")
+						PointSearch(tag, PointExact.IsChecked == true ? "exact" : "contains");
 				}
 			}
 			catch (Exception)
@@ -316,6 +242,7 @@ namespace VioAlarmQualityCheckUtility
 				MessageBox.Show("Point name search error.");
 			}
 		}
+
 
 		/************************************************************************
 		 * Radio button action and event functions that are triggered from the view
@@ -368,9 +295,9 @@ namespace VioAlarmQualityCheckUtility
 			}
 		}
 
-		/** The following four functions are based off of rather the radio button is selected, but
+		/** The following two functions are based off of rather the radio button is selected, but
 		 * do not effect the GUI. **/
-		private void TagSearchContainsRadio_Checked(string tag)
+		private void TagSearch(string tag, string searchType)
 		{
 			List<AwxSource> foundSources = new List<AwxSource>();
 
@@ -381,71 +308,84 @@ namespace VioAlarmQualityCheckUtility
 
 				List<AwxSource> sources = RecurseList(area);
 
-				foreach (var awxSource in sources)
+
+				if (searchType == "contains")
 				{
-					if (awxSource.Name.Contains(tag))
-						foundSources.Add(awxSource);
+					foreach (var awxSource in sources)
+					{
+						if (awxSource.Name.Contains(tag))
+							foundSources.Add(awxSource);
+					}
+				}
+				else
+				{
+					foreach (var awxSource in sources)
+					{
+						if (awxSource.Name == tag)
+							foundSources.Add(awxSource);
+					}
 				}
 			}
 
-			Report.ItemsSource = _qualityCheck.CheckAll(foundSources);
-		}
 
-		private void TagSearchExactRadio_Checked(string tag)
-		{
-			List<AreaModel> areas = FindListOfParents(tag, "Name");
-
-			if (areas.Count == 0)
+			if (foundSources.Count == 0)
 			{
-				MessageBox.Show("Could not find tag.");
+				Report.ItemsSource = null;
+				OverlayText.Text = "No tags were found.";
+				Overlay.Visibility = Visibility.Visible;
 			}
 			else
 			{
-				foreach (var areaModel in areas)
-				{
-					OpenTreeViewItem(AreaTreeView, areaModel);
-				}
+				Overlay.Visibility = Visibility.Collapsed;
+				Report.ItemsSource = _qualityCheck.CheckAll(foundSources);
 			}
 		}
 
-		private void PointSearchExactRadio_Checked(string pointName)
-		{
-			List<AreaModel> areas = FindListOfParents(pointName, "Input1");
 
-			if (areas.Count == 0)
-			{
-				MessageBox.Show("Could not find tag.");
-			}
-			else
-			{
-				foreach (var areaModel in areas)
-				{
-					OpenTreeViewItem(AreaTreeView, areaModel);
-				}
-			}
-		}
-
-		private void PointSearchContainsRadio_Checked(string pointName)
+		private void PointSearch(string pointName, string searchType)
 		{
 			List<AwxSource> foundSources = new List<AwxSource>();
 
-			foreach (AreaModel area in ((List<AreaModel>) AreaTreeView.ItemsSource))
+			foreach (AreaModel area in ((List<AreaModel>)AreaTreeView.ItemsSource))
 			{
 				if (_sources.Count != 0)
 					_sources.Clear();
 
 				List<AwxSource> sources = RecurseList(area);
 
-				foreach (var awxSource in sources)
+
+				if (searchType == "contains")
 				{
-					if (awxSource.Input1.Contains(pointName))
-						foundSources.Add(awxSource);
+					foreach (var awxSource in sources)
+					{
+						if (awxSource.Name.Contains(pointName))
+							foundSources.Add(awxSource);
+					}
+				}
+				else
+				{
+					foreach (var awxSource in sources)
+					{
+						if (awxSource.Name == pointName)
+							foundSources.Add(awxSource);
+					}
 				}
 			}
 
-			Report.ItemsSource = _qualityCheck.CheckAll(foundSources);
-
+			if (foundSources.Count == 0)
+			{
+				Report.ItemsSource = null;
+				OverlayText.Text = "No tags were found.";
+				Overlay.Visibility = Visibility.Visible;
+			}
+			else
+			{
+				Overlay.Visibility = Visibility.Collapsed;
+				Report.ItemsSource = _qualityCheck.CheckAll(foundSources);
+			}
 		}
+
+		
 
 
 
@@ -531,6 +471,7 @@ namespace VioAlarmQualityCheckUtility
 			if (_sources.Count == 0)
 			{
 				Report.ItemsSource = null;
+				OverlayText.Text = "There are no tags in this area.";
 				Overlay.Visibility = Visibility.Visible;
 			}
 			else
@@ -668,5 +609,122 @@ namespace VioAlarmQualityCheckUtility
 			PointSearchbox.Text = PointSearchbox.Text == "Point Name" ? "" : PointSearchbox.Text;
 
 		}
+
+
+		/************************************************************************
+		 * Unused methods
+		 ************************************************************************/
+		/** Part of the searching tag function. This opens the area in the treeview if it is found within
+		 * the current itemcontrol being recursed **/
+		//public static void OpenTreeViewItem(ItemsControl ic, object area)
+		//{
+
+		//	ic.UpdateLayout();
+
+		//	TreeViewItem tvi = ic.ItemContainerGenerator.ContainerFromItem(area) as TreeViewItem;
+
+		//	if (tvi == null)
+		//	{
+		//		foreach (object i in ic.Items)
+		//		{
+		//			//Get the TreeViewItem associated with the iterated object model
+		//			TreeViewItem tvi2 = ic.ItemContainerGenerator.ContainerFromItem(i) as TreeViewItem;
+
+		//			if (tvi2 == null)
+		//				break;
+		//			else
+		//				OpenTreeViewItem(tvi2, area);
+
+		//		}
+		//	}
+		//	else
+		//	{
+		//		tvi.IsExpanded = true;
+		//		tvi.IsSelected = true;
+		//	}
+
+		/** This creates the list of parents that need to be found within the treeview. It is starting with the
+		 * root that needs to be found first, then working down a tree until the tag's parent is found **/
+		//private List<AreaModel> FindListOfParents(string searchString, string searchProperty)
+		//{
+		//	List<AreaModel> returnedAreaModels = new List<AreaModel>();
+
+		//	foreach (AreaModel area in ((List<AreaModel>)AreaTreeView.ItemsSource))
+		//	{
+		//		List<AwxSource> sources = RecurseList(area);
+		//		try
+		//		{
+		//			AwxSource source = searchProperty == "Name"
+		//				? sources.Find(s => s.Name == searchString)
+		//				: sources.Find(s => s.Input1 == searchString);
+
+		//			if (source != null)
+		//			{
+		//				var parentAreas = source.AreaName.Split('\\');
+
+		//				foreach (var parentArea in parentAreas)
+		//				{
+		//					AreaModel tempArea = _allAreas.Find(a => a.Name == parentArea);
+		//					returnedAreaModels.Add(tempArea);
+		//				}
+
+		//				break;
+		//			}
+
+		//		}
+		//		catch (Exception ex)
+		//		{
+		//			MessageBox.Show(ex.Message);
+		//		}
+		//	}
+
+		//	return returnedAreaModels;
+		//}
+
+		//private void PointSearchContainsRadio_Checked(string pointName)
+		//{
+		//	List<AwxSource> foundSources = new List<AwxSource>();
+
+		//	foreach (AreaModel area in ((List<AreaModel>)AreaTreeView.ItemsSource))
+		//	{
+		//		if (_sources.Count != 0)
+		//			_sources.Clear();
+
+		//		List<AwxSource> sources = RecurseList(area);
+
+		//		foreach (var awxSource in sources)
+		//		{
+		//			if (awxSource.Input1.Contains(pointName))
+		//				foundSources.Add(awxSource);
+		//		}
+		//	}
+
+		//	Report.ItemsSource = _qualityCheck.CheckAll(foundSources);
+
+		//}
+
+		//private void TagSearchExactRadio_Checked(string tag)
+		//{
+		//	List<AwxSource> foundSources = new List<AwxSource>();
+
+		//	foreach (AreaModel area in ((List<AreaModel>)AreaTreeView.ItemsSource))
+		//	{
+		//		if (_sources.Count != 0)
+		//			_sources.Clear();
+
+		//		List<AwxSource> sources = RecurseList(area);
+
+		//		foreach (var awxSource in sources)
+		//		{
+		//			if (awxSource.Name == tag)
+		//				foundSources.Add(awxSource);
+		//		}
+		//	}
+
+		//	Report.ItemsSource = _qualityCheck.CheckAll(foundSources);
+
+		//}
 	}
 }
+
+

@@ -65,7 +65,7 @@ namespace VioAlarmQualityCheckUtility.Class
 								Area = item.AreaName,
 								TagName = item.Name,
 								PointName = item.Input1,
-								PointStatus = ""
+								PointStatus = item.Input1.Replace("x=", "").Trim()
 							});
 
 							points = item.Input1.Split('@');
@@ -113,7 +113,6 @@ namespace VioAlarmQualityCheckUtility.Class
 
 							ReadPointAsync(newWord);
 						}
-
 					}
 
 				((MainWindow)Application.Current.MainWindow).Report.ItemsSource = report;
@@ -151,8 +150,18 @@ namespace VioAlarmQualityCheckUtility.Class
 
 			if (data != null)
 				foreach (var item in data)
+				{
 					if (item.PointName == result.UserState.ToString())
+					{
 						item.PointStatus = result.Value.Status.ToString();
+
+					}
+
+					if (item.PointName.Contains(result.UserState.ToString()))
+					{
+						item.PointStatus = item.PointStatus.Replace(result.UserState.ToString(), result.Value.Status.ToString());
+					}
+				}
 
 			((MainWindow)Application.Current.MainWindow).Report.ItemsSource = data;
 			((MainWindow)Application.Current.MainWindow).Report.Items.Refresh();

@@ -16,11 +16,17 @@ namespace VioAlarmQualityCheckUtility.Class
 			List<Source2Area> s2a = new List<Source2Area>();
 			var temp = Properties.Settings.Default.SqlServerInstance;
 			SqlConnection connection;
+			areasList.Add(new AreaModel
+			{
+				Id = 0,
+				Name = "All Tags",
+				RecursiveParentId = 0
+			});
 
 			areasList.Add(new AreaModel
 			{
 				Id = 0,
-				Name = "Not Assigned Area",
+				Name = "Unassigned Tags",
 				RecursiveParentId = 0
 			});
 
@@ -122,7 +128,7 @@ namespace VioAlarmQualityCheckUtility.Class
 
 					if (source2Areas.Count == 0)
 					{
-						var noArea = areas.Find(a => a.Name == "Not Assigned Area");
+						var noArea = areas.Find(a => a.Name == "Unassigned Tags");
 
 						noArea.SourcesList.Add(new AwxSource
 						{
@@ -162,11 +168,11 @@ namespace VioAlarmQualityCheckUtility.Class
 									parentAreasString = tempArea.Name + "\\" + parentAreasString;
 								}
 
-								newSource.AreaName = parentAreasString;
-
+								newSource.AreaName = parentAreasString + "\\" + area.Name;
 							}
 
 							area.SourcesList.Add(newSource);
+							areas[0].SourcesList.Add(newSource);
 						}
 					}
 				}

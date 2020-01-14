@@ -7,7 +7,7 @@
             <Setter Property="Background" Value="#046B99" />
             <Setter Property="Foreground" Value="White" />
             <Setter Property="BorderBrush" Value="#046B99" />
-            <Setter Property="Height" Value="25" />
+            <Setter Property="Height" Value="26" />
             <Setter Property="Effect">
                 <Setter.Value>
                     <DropShadowEffect BlurRadius="2" ShadowDepth="1"/>

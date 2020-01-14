@@ -9,6 +9,7 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -17,6 +18,8 @@
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
 
+        
+
         <TreeView x:Name="AreaTreeView" Grid.Row="1" Grid.Column="0" ItemsSource="{Binding}" SelectedItemChanged="AreaTreeView_OnSelectedItemChanged">
             <TreeView.ItemTemplate>
                 <HierarchicalDataTemplate x:Name="dataNames" ItemsSource="{Binding Items}" >
@@ -24,6 +27,7 @@
                 </HierarchicalDataTemplate>
             </TreeView.ItemTemplate>
         </TreeView>
+
 
         <Grid Margin="20, 0, 10, 0" MaxHeight="300" Grid.Row="0" Grid.Column="0" MinWidth="351">
             <Grid.RowDefinitions>
@@ -102,7 +106,7 @@
                 <TextBlock Grid.Row="1" Grid.Column="3" FontWeight="DemiBold" FontSize="16" Height="24"  Margin="15, 10, 0, 0">SQL Database</TextBlock>
                 <ComboBox x:Name="SqlServerDatabase_ComboBox" Height="24" Grid.Row="2" Grid.Column="3"  Margin="18, 10, 0, 0" Width="160" SelectionChanged="SqlServerDatabase_ComboBox_SelectionChanged" />
                 <TextBlock x:Name="DBSelectBox" IsHitTestVisible="False" Grid.Row="2" Grid.Column="3" Visibility="Hidden" Text="Select a Database" Margin="24,16,54,5"/>
-                <Button  Grid.Row="2" Grid.Column="4" Click="Run" Content="Run Quality Check" HorizontalAlignment="Left" Margin="15, 10, 15, 0" Width="127" FontSize="13"/>
+                <Button  Grid.Row="2" Grid.Column="4" Click="Run" Content="Run Quality Check" HorizontalAlignment="Left" Margin="15, 10, 15, 0" Width="127" FontSize="13" Height="25"/>
                 <Border Grid.Row="0" Grid.RowSpan="4" Grid.Column="5" BorderThickness="1, 0, 0, 0" BorderBrush="#707070">
                     <StackPanel Orientation="Vertical">
                         <TextBlock  Background="#414141" Foreground="White" FontSize="20" Height="30" Padding="20, 0, 0, 0">Search for...</TextBlock>
@@ -133,8 +137,9 @@
             <Grid.Background>
                 <SolidColorBrush Color="Black" Opacity=".4"/>
             </Grid.Background>
-            <TextBlock Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center">There are no tags in this area.</TextBlock>
+            <TextBlock x:Name="OverlayText" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Grid>
+
         <DataGrid x:Name="Report" Grid.Row="1" Grid.Column="1" AutoGenerateColumns="False" Margin="0,0,0,0" VerticalAlignment="Stretch" HorizontalScrollBarVisibility="Auto"  CanUserAddRows="False" IsReadOnly="True">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="ID" Binding="{Binding ID}" Visibility="Hidden"/>
