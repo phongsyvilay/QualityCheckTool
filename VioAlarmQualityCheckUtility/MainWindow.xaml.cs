@@ -423,20 +423,29 @@ namespace VioAlarmQualityCheckUtility
 		 **/
 		private void AreaTreeView_OnSelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
 		{
+			AreaModel area = (AreaModel) e.NewValue;
 
-			_foundReports.Clear();
-			_foundReports = RecurseList((AreaModel)e.NewValue);
-
-			if (_foundReports.Count == 0)
+			if (area.Name == "All Tags")
 			{
-				Report.ItemsSource = null;
-				OverlayText.Text = "There are no tags in this area.";
-				Overlay.Visibility = Visibility.Visible;
+				Overlay.Visibility = Visibility.Collapsed;
+				Report.ItemsSource = _allReports;
 			}
 			else
 			{
-				Overlay.Visibility = Visibility.Collapsed;
-				Report.ItemsSource = _foundReports;
+				_foundReports.Clear();
+				_foundReports = RecurseList(area);
+
+				if (_foundReports.Count == 0)
+				{
+					Report.ItemsSource = null;
+					OverlayText.Text = "There are no tags in this area.";
+					Overlay.Visibility = Visibility.Visible;
+				}
+				else
+				{
+					Overlay.Visibility = Visibility.Collapsed;
+					Report.ItemsSource = _foundReports;
+				}
 			}
 
 			Report.Items.Refresh();
@@ -572,19 +581,30 @@ namespace VioAlarmQualityCheckUtility
 
 		}
 
+		/************************************************************************
+		* Methods used to edit rows in the data grid
+		************************************************************************/
+
+		/**
+		 * Method is used to check if the user has edited a cell within the data grid. If the cell
+		 * has been edited then it will IMMEDIATELY update that change in SQL.
+		 **/
 		private void Report_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
 		{
 			bool different = false;
 			string editedText = ((TextBox)e.EditingElement).Text;
 			ReportModel rm = (ReportModel) e.Row.Item;
 
-			if (((DataGrid)sender).CurrentColumn.Header.ToString() == "Tag Name")
+			if (((DataGrid)sender).CurrentColumn?.Header.ToString() == "Tag Name")
 			{
 				if (editedText != rm.TagName)
 					different = true;
 
-				if(different)
+				if (different)
+				{
 					_sqlServer.UpdateAwxSourceTagName(rm, editedText);
+					Notification_Popup();
+				}
 			}
 			else
 			{
@@ -599,9 +619,29 @@ namespace VioAlarmQualityCheckUtility
 						Console.WriteLine("here");
 					}
 					_sqlServer.UpdateAwxSourcePointName(rm, editedText);
+					Notification_Popup();
 				}
 			}
 
+		}
+
+		/**
+		 * Removes the cancel notification
+		 **/
+		private void NotificationCancel(object sender, System.Windows.Input.MouseButtonEventArgs e)
+		{
+			Notification.Visibility = Visibility.Hidden;
+			Report.Margin = new Thickness(0, 0, 0, 0);
+		}
+
+		/**
+		 * Creates a pop up notification that notifies the user to update workbench if they have made
+		 * any changes to the data grid. 
+		 **/
+		private void Notification_Popup()
+		{
+			Notification.Visibility = Visibility.Visible;
+			Report.Margin = new Thickness(0, 20, 0, 0);
 		}
 	}
 	/************************************************************************
