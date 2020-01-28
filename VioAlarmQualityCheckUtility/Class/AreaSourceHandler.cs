@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Windows;
 using VioAlarmQualityCheckUtility.Models;
+using VioAlarmQualityCheckUtility.Properties;
 
 namespace VioAlarmQualityCheckUtility.Class
 {
@@ -128,15 +129,16 @@ namespace VioAlarmQualityCheckUtility.Class
 
 					if (source2Areas.Count == 0)
 					{
-						var noArea = areas.Find(a => a.Name == "Unassigned Tags");
-
-						noArea.SourcesList.Add(new AwxSource
+						var newSource = new AwxSource
 						{
-							AreaName = noArea.Name,
+							AreaName = areas[1].Name,
 							ID = source.ID,
 							Input1 = source.Input1,
 							Name = source.Name
-						});
+						};
+						//Adding to unassigned tags area
+						areas[0].SourcesList.Add(newSource);
+						areas[1].SourcesList.Add(newSource);
 					}
 					else
 					{

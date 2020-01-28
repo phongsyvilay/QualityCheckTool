@@ -11,6 +11,8 @@ namespace VioAlarmQualityCheckUtility.Class
 {
 	class SqlServer
 	{
+		private static SqlConnection _sqlConn;
+
 		// Function:        Get Local SQL Server Instances
 		// Description:     Returns a collection of installed local SQL Server instances
 		// ==============================================================================================================================================================
@@ -108,7 +110,7 @@ namespace VioAlarmQualityCheckUtility.Class
 				string temp = row.ItemArray[0].ToString();
 
 				if (row.ItemArray[1].ToString() != "")
-					temp += $@"\{row.ItemArray[1].ToString()}";
+					temp += $@"\{row.ItemArray[1]}";
 
 				list.Add(temp);
 			}
@@ -122,16 +124,18 @@ namespace VioAlarmQualityCheckUtility.Class
 		// ==============================================================================================================================================================
 		public static List<string> GetLocalSqlInstanceDatabases()
 		{
-			SqlConnection sqlConn = new SqlConnection("Data Source=" + Properties.Settings.Default.SqlServerInstance + ";Integrated Security=True");
-			List<string> databases = QueryDatabases(sqlConn);
-			return databases;
+			_sqlConn = new SqlConnection("Data Source=" + Properties.Settings.Default.SqlServerInstance + ";Integrated Security=True");
+			//List<string> databases = QueryDatabases(_sqlConn);
+			//return databases;
+			return QueryDatabases(_sqlConn);
 		}
 
 		public static List<string> GetSqlInstanceDatabases(string instance, string username, string password)
 		{
-			SqlConnection sqlConn = new SqlConnection($"Data Source={instance}; User ID={username}; Password={password}");
-			List<string> databases = QueryDatabases(sqlConn);
-			return databases;
+			_sqlConn = new SqlConnection($"Data Source={instance}; User ID={username}; Password={password}");
+			//List<string> databases = QueryDatabases(_sqlConn);
+			//return databases;
+			return QueryDatabases(_sqlConn);
 		}
 
 		public static List<string> QueryDatabases(SqlConnection sqlConn) 
@@ -173,16 +177,18 @@ namespace VioAlarmQualityCheckUtility.Class
 		// ==============================================================================================================================================================
 		public List<AwxSource> GetAlarmSources()
 		{
-			SqlConnection sqlConn = new SqlConnection("Data Source=" + Properties.Settings.Default.SqlServerInstance + ";Integrated Security=True");
-			List<AwxSource> data = QueryAwxSources(sqlConn);
-			return data;
+			//_sqlConn = new SqlConnection("Data Source=" + Properties.Settings.Default.SqlServerInstance + ";Integrated Security=True");
+			//List<AwxSource> data = QueryAwxSources(_sqlConn);
+			//return data;
+			return QueryAwxSources(_sqlConn);
 		}
 
 		public List<AwxSource> GetRemoteAlarmSources(string instance, string username, string password)
 		{
-			SqlConnection sqlConn = new SqlConnection($@"Data Source={instance}; User ID={username}; Password={password}");
-			List<AwxSource> data = QueryAwxSources(sqlConn);
-			return data;
+			//_sqlConn = new SqlConnection($@"Data Source={instance}; User ID={username}; Password={password}");
+			//List<AwxSource> data = QueryAwxSources(_sqlConn);
+			//return data;
+			return QueryAwxSources(_sqlConn);
 		}
 
 		public static List<AwxSource> QueryAwxSources(SqlConnection sqlConn)
@@ -200,10 +206,6 @@ namespace VioAlarmQualityCheckUtility.Class
 
 				while (reader.Read())
 				{
-					var name = reader[0];
-					var input1 = reader[1];
-					var id = reader[2];
-
 					var awxSource = new AwxSource
 					{
 						Name = reader[0].ToString(),
@@ -224,6 +226,52 @@ namespace VioAlarmQualityCheckUtility.Class
 			}
 
 			return data;
+		}
+
+		public void UpdateAwxSourceTagName(ReportModel sourceToUpdate, string newName)
+		{
+			SqlCommand cmd = new SqlCommand();
+
+			try
+			{
+				cmd.Connection = _sqlConn;
+				cmd.Connection.Open();
+				cmd.CommandText =
+					$"UPDATE {Properties.Settings.Default.SqlServerDatabase}.dbo.AWX_Source SET Name = '{newName}' WHERE SourceID = {sourceToUpdate.SourceID}";
+
+				cmd.CommandType = CommandType.Text;
+				cmd.ExecuteNonQuery();
+				cmd.Connection.Close();
+
+			}
+			catch (Exception e)
+			{
+				Console.WriteLine(e);
+				throw;
+			}
+		}
+
+		public void UpdateAwxSourcePointName(ReportModel sourceToUpdate, string newName)
+		{
+			SqlCommand cmd = new SqlCommand();
+
+			try
+			{
+				cmd.Connection = _sqlConn;
+				cmd.Connection.Open();
+				cmd.CommandText =
+					$"UPDATE {Properties.Settings.Default.SqlServerDatabase}.dbo.AWX_Source SET Input1 = '{newName}' WHERE SourceID = {sourceToUpdate.SourceID}";
+
+				cmd.CommandType = CommandType.Text;
+				cmd.ExecuteNonQuery();
+				cmd.Connection.Close();
+
+			}
+			catch (Exception e)
+			{
+				Console.WriteLine(e);
+				throw;
+			}
 		}
 
 

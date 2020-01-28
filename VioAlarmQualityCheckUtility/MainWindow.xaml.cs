@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Configuration;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
-using Ico.Fwx.ClientWrapper;
 using VioAlarmQualityCheckUtility.Class;
 using VioAlarmQualityCheckUtility.Models;
 using VioAlarmQualityCheckUtility.Properties;
-using VioAlarmQualityCheckUtility.Windows;
 
 namespace VioAlarmQualityCheckUtility
 {
@@ -18,10 +16,9 @@ namespace VioAlarmQualityCheckUtility
 	///
 	public partial class MainWindow
 	{
-		private readonly QualityCheck _qualityCheck = new QualityCheck();
 		private readonly SqlServer _sqlServer = new SqlServer();
-		private List<AwxSource> _sources = new List<AwxSource>();
-		List<AreaModel> _allAreas = new List<AreaModel>();
+		List<ReportModel> _allReports = new List<ReportModel>();
+		private List<ReportModel> _foundReports = new List<ReportModel>();
 
 		private string _netPassword = "";
 		private string _netUsername = "";
@@ -33,6 +30,7 @@ namespace VioAlarmQualityCheckUtility
 		public MainWindow()
 		{
 			InitializeComponent();
+
 		}
 
 		/************************************************************************
@@ -59,20 +57,25 @@ namespace VioAlarmQualityCheckUtility
 		}
 
 		/** Generates all the sources that are connected with the selected area and its children **/
-		public List<AwxSource> RecurseList(AreaModel area)
+		public List<ReportModel> RecurseList(AreaModel area)
 		{
 			try
 			{
 				foreach (var source in area.SourcesList)
 				{
-					_sources.Add(source);
+					var found = _allReports.FindAll(s => s.TagName == source.Name && s.Area == source.AreaName);
+					_foundReports.AddRange(found);
 				}
 
 				foreach (var child in area.Children)
 				{
 					if (child.SourcesList.Count != 0)
 						foreach (var awxSource in child.SourcesList)
-							_sources.Add(awxSource);
+						{
+							var found = _allReports.FindAll(s =>
+								s.TagName == awxSource.Name && s.Area == awxSource.AreaName);
+							_foundReports.AddRange(found);
+						}
 
 					if (child.Children.Count != 0)
 						RecurseList(child);
@@ -84,7 +87,7 @@ namespace VioAlarmQualityCheckUtility
 				MessageBox.Show("List Error");
 			}
 
-			return _sources;
+			return _foundReports;
 		}
 
 		/************************************************************************
@@ -94,13 +97,13 @@ namespace VioAlarmQualityCheckUtility
 		/** Searches for sql server instances for the computer that is being targeted **/
 		private void SearchButton_Click(object sender, RoutedEventArgs e)
 		{
-			SearchButtonUIClear();
+			SearchButtonUiClear();
 
-			if (LocalMachine.IsChecked.Value)
+			if (LocalMachine.IsChecked != null && LocalMachine.IsChecked.Value)
 			{
 				InitializeSqlServerData(".\\");
 			}
-			else if (LocalNetwork.IsChecked.Value)
+			else if (LocalNetwork.IsChecked != null && LocalNetwork.IsChecked.Value)
 			{
 				InitializeSqlServerData(".");
 			}
@@ -126,7 +129,7 @@ namespace VioAlarmQualityCheckUtility
 		/** If the search button is clicked this function is clearing the combo boxes and the text hovering over
 		 * the combo boxes
 		 **/
-		private void SearchButtonUIClear()
+		private void SearchButtonUiClear()
 		{
 			SqlServerInstance_ComboBox.SelectionChanged -= SqlServerInstance_ComboBox_SelectionChanged;
 			SqlServerDatabase_ComboBox.SelectionChanged -= SqlServerDatabase_ComboBox_SelectionChanged;
@@ -159,6 +162,7 @@ namespace VioAlarmQualityCheckUtility
 				var database = SqlServerDatabase_ComboBox.SelectedItem.ToString();
 				var connection = NetConnection.Text;
 				var instance = SqlServerInstance_ComboBox.Text;
+				QualityCheck qualityCheck = new QualityCheck();
 
 				if (RemoteMachine.IsChecked == true)
 					instance = connection + "\\" + instance;
@@ -176,26 +180,18 @@ namespace VioAlarmQualityCheckUtility
 
 				try
 				{
+					List<AwxSource> sources;
 					if (username != "" && password != "")
-						_sources = _sqlServer.GetRemoteAlarmSources(instance, username, password);
+						sources = _sqlServer.GetRemoteAlarmSources(instance, username, password);
 					else
-						_sources = _sqlServer.GetAlarmSources();
+						sources = _sqlServer.GetAlarmSources();
 
 					var ash = new AreaSourceHandler();
-					_allAreas = ash.GetAreas(instance, database, username, password, _sources);
-					IList<AreaModel> selectedArea = _allAreas.FindAll(i => i.RecursiveParentId == 0);
-
-					_sources.Clear();
-
-					foreach (var areaModel in selectedArea)
-					{
-						RecurseList(areaModel);
-					}
-
-					
+					var allAreas = ash.GetAreas(instance, database, username, password, sources);
+					IList<AreaModel> selectedArea = allAreas.FindAll(i => i.RecursiveParentId == 0);
 
 					AreaTreeView.ItemsSource = selectedArea;
-					Report.ItemsSource  = _qualityCheck.CheckAll(_sources);
+					Report.ItemsSource = _allReports = qualityCheck.CheckAll(allAreas[0].SourcesList);
 				}
 				catch (Exception ex)
 				{
@@ -218,7 +214,7 @@ namespace VioAlarmQualityCheckUtility
 					TagSearch(tag, SearchExact.IsChecked == true ? "exact" : "contains");
 				}
 			}
-			catch (Exception )
+			catch (Exception)
 			{
 				MessageBox.Show("Tag search error.");
 			}
@@ -233,7 +229,7 @@ namespace VioAlarmQualityCheckUtility
 
 				if (tag != "")
 				{
-					if(tag != "")
+					if (tag != "")
 						PointSearch(tag, PointExact.IsChecked == true ? "exact" : "contains");
 				}
 			}
@@ -295,84 +291,50 @@ namespace VioAlarmQualityCheckUtility
 			}
 		}
 
-		/** The following two functions are based off of rather the radio button is selected, but
-		 * do not effect the GUI. **/
+		/** The following two search functions are dependent on which radio button is selected. Will keep these separate
+		 *	since they are searching within different properties. **/
 		private void TagSearch(string tag, string searchType)
 		{
-			List<AwxSource> foundSources = new List<AwxSource>();
+			List<ReportModel> foundReports = new List<ReportModel>();
 
-			foreach (AreaModel area in ((List<AreaModel>)AreaTreeView.ItemsSource))
+			if (searchType == "contains")
 			{
-				if (_sources.Count != 0)
-					_sources.Clear();
-
-				List<AwxSource> sources = RecurseList(area);
-
-
-				if (searchType == "contains")
-				{
-					foreach (var awxSource in sources)
-					{
-						if (awxSource.Name.Contains(tag))
-							foundSources.Add(awxSource);
-					}
-				}
-				else
-				{
-					foreach (var awxSource in sources)
-					{
-						if (awxSource.Name == tag)
-							foundSources.Add(awxSource);
-					}
-				}
+				foundReports = _allReports.FindAll(r => r.TagName.Contains(tag));
 			}
+			else if (searchType == "exact")
+				foundReports = _allReports.FindAll(r => r.TagName == tag);
 
 
-			if (foundSources.Count == 0)
+			if (foundReports.Count == 0)
 			{
 				Report.ItemsSource = null;
 				OverlayText.Text = "No tags were found.";
 				Overlay.Visibility = Visibility.Visible;
+
 			}
 			else
 			{
 				Overlay.Visibility = Visibility.Collapsed;
-				Report.ItemsSource = _qualityCheck.CheckAll(foundSources);
+				Report.ItemsSource = foundReports;
 			}
+
+			Report.Items.Refresh();
 		}
 
 
 		private void PointSearch(string pointName, string searchType)
 		{
-			List<AwxSource> foundSources = new List<AwxSource>();
+			List<ReportModel> foundReports = new List<ReportModel>();
 
-			foreach (AreaModel area in ((List<AreaModel>)AreaTreeView.ItemsSource))
+			if (searchType == "contains")
 			{
-				if (_sources.Count != 0)
-					_sources.Clear();
-
-				List<AwxSource> sources = RecurseList(area);
-
-
-				if (searchType == "contains")
-				{
-					foreach (var awxSource in sources)
-					{
-						if (awxSource.Name.Contains(pointName))
-							foundSources.Add(awxSource);
-					}
-				}
-				else
-				{
-					foreach (var awxSource in sources)
-					{
-						if (awxSource.Name == pointName)
-							foundSources.Add(awxSource);
-					}
-				}
+				foundReports = _allReports.FindAll(r => r.PointName.Contains(pointName));
 			}
+			else if (searchType == "exact")
+				foundReports = _allReports.FindAll(r => r.PointName == pointName);
 
-			if (foundSources.Count == 0)
+
+			if (foundReports.Count == 0)
 			{
 				Report.ItemsSource = null;
 				OverlayText.Text = "No tags were found.";
@@ -381,13 +343,11 @@ namespace VioAlarmQualityCheckUtility
 			else
 			{
 				Overlay.Visibility = Visibility.Collapsed;
-				Report.ItemsSource = _qualityCheck.CheckAll(foundSources);
+				Report.ItemsSource = foundReports;
 			}
+
+			Report.Items.Refresh();
 		}
-
-		
-
-
 
 		/************************************************************************
 		 * Combo boxes selection actions
@@ -463,12 +423,11 @@ namespace VioAlarmQualityCheckUtility
 		 **/
 		private void AreaTreeView_OnSelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
 		{
-			if (_sources.Count != 0)
-				_sources.Clear();
 
-			_sources = RecurseList((AreaModel)e.NewValue);
+			_foundReports.Clear();
+			_foundReports = RecurseList((AreaModel)e.NewValue);
 
-			if (_sources.Count == 0)
+			if (_foundReports.Count == 0)
 			{
 				Report.ItemsSource = null;
 				OverlayText.Text = "There are no tags in this area.";
@@ -476,9 +435,11 @@ namespace VioAlarmQualityCheckUtility
 			}
 			else
 			{
-				Report.ItemsSource = _qualityCheck.CheckAll(_sources);
 				Overlay.Visibility = Visibility.Collapsed;
+				Report.ItemsSource = _foundReports;
 			}
+
+			Report.Items.Refresh();
 		}
 
 		/************************************************************************
@@ -520,6 +481,7 @@ namespace VioAlarmQualityCheckUtility
 				_netUsername = NetUsernameBox.Text.Trim();
 			}
 		}
+
 		private void netConnection_GotFocus(object sender, RoutedEventArgs e)
 		{
 			NetConnection.Text = _netConnection == "" ? "" : _netConnection;
@@ -610,121 +572,109 @@ namespace VioAlarmQualityCheckUtility
 
 		}
 
+		private void Report_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+		{
+			bool different = false;
+			string editedText = ((TextBox)e.EditingElement).Text;
+			ReportModel rm = (ReportModel) e.Row.Item;
 
-		/************************************************************************
-		 * Unused methods
-		 ************************************************************************/
-		/** Part of the searching tag function. This opens the area in the treeview if it is found within
-		 * the current itemcontrol being recursed **/
-		//public static void OpenTreeViewItem(ItemsControl ic, object area)
-		//{
+			if (((DataGrid)sender).CurrentColumn.Header.ToString() == "Tag Name")
+			{
+				if (editedText != rm.TagName)
+					different = true;
 
-		//	ic.UpdateLayout();
+				if(different)
+					_sqlServer.UpdateAwxSourceTagName(rm, editedText);
+			}
+			else
+			{
+				// Goes into this statement for point name 
+				if (editedText != rm.PointName)
+					different = true;
 
-		//	TreeViewItem tvi = ic.ItemContainerGenerator.ContainerFromItem(area) as TreeViewItem;
+				if (different)
+				{
+					if (rm.PointName.Contains("x="))
+					{
+						Console.WriteLine("here");
+					}
+					_sqlServer.UpdateAwxSourcePointName(rm, editedText);
+				}
+			}
 
-		//	if (tvi == null)
-		//	{
-		//		foreach (object i in ic.Items)
-		//		{
-		//			//Get the TreeViewItem associated with the iterated object model
-		//			TreeViewItem tvi2 = ic.ItemContainerGenerator.ContainerFromItem(i) as TreeViewItem;
-
-		//			if (tvi2 == null)
-		//				break;
-		//			else
-		//				OpenTreeViewItem(tvi2, area);
-
-		//		}
-		//	}
-		//	else
-		//	{
-		//		tvi.IsExpanded = true;
-		//		tvi.IsSelected = true;
-		//	}
-
-		/** This creates the list of parents that need to be found within the treeview. It is starting with the
-		 * root that needs to be found first, then working down a tree until the tag's parent is found **/
-		//private List<AreaModel> FindListOfParents(string searchString, string searchProperty)
-		//{
-		//	List<AreaModel> returnedAreaModels = new List<AreaModel>();
-
-		//	foreach (AreaModel area in ((List<AreaModel>)AreaTreeView.ItemsSource))
-		//	{
-		//		List<AwxSource> sources = RecurseList(area);
-		//		try
-		//		{
-		//			AwxSource source = searchProperty == "Name"
-		//				? sources.Find(s => s.Name == searchString)
-		//				: sources.Find(s => s.Input1 == searchString);
-
-		//			if (source != null)
-		//			{
-		//				var parentAreas = source.AreaName.Split('\\');
-
-		//				foreach (var parentArea in parentAreas)
-		//				{
-		//					AreaModel tempArea = _allAreas.Find(a => a.Name == parentArea);
-		//					returnedAreaModels.Add(tempArea);
-		//				}
-
-		//				break;
-		//			}
-
-		//		}
-		//		catch (Exception ex)
-		//		{
-		//			MessageBox.Show(ex.Message);
-		//		}
-		//	}
-
-		//	return returnedAreaModels;
-		//}
-
-		//private void PointSearchContainsRadio_Checked(string pointName)
-		//{
-		//	List<AwxSource> foundSources = new List<AwxSource>();
-
-		//	foreach (AreaModel area in ((List<AreaModel>)AreaTreeView.ItemsSource))
-		//	{
-		//		if (_sources.Count != 0)
-		//			_sources.Clear();
-
-		//		List<AwxSource> sources = RecurseList(area);
-
-		//		foreach (var awxSource in sources)
-		//		{
-		//			if (awxSource.Input1.Contains(pointName))
-		//				foundSources.Add(awxSource);
-		//		}
-		//	}
-
-		//	Report.ItemsSource = _qualityCheck.CheckAll(foundSources);
-
-		//}
-
-		//private void TagSearchExactRadio_Checked(string tag)
-		//{
-		//	List<AwxSource> foundSources = new List<AwxSource>();
-
-		//	foreach (AreaModel area in ((List<AreaModel>)AreaTreeView.ItemsSource))
-		//	{
-		//		if (_sources.Count != 0)
-		//			_sources.Clear();
-
-		//		List<AwxSource> sources = RecurseList(area);
-
-		//		foreach (var awxSource in sources)
-		//		{
-		//			if (awxSource.Name == tag)
-		//				foundSources.Add(awxSource);
-		//		}
-		//	}
-
-		//	Report.ItemsSource = _qualityCheck.CheckAll(foundSources);
-
-		//}
+		}
 	}
+	/************************************************************************
+	 * Unused methods
+	 ************************************************************************/
+	/** Part of the searching tag function. This opens the area in the treeview if it is found within
+	 * the current itemcontrol being recursed **/
+	//public static void OpenTreeViewItem(ItemsControl ic, object area)
+	//{
+
+	//	ic.UpdateLayout();
+
+	//	TreeViewItem tvi = ic.ItemContainerGenerator.ContainerFromItem(area) as TreeViewItem;
+
+	//	if (tvi == null)
+	//	{
+	//		foreach (object i in ic.Items)
+	//		{
+	//			//Get the TreeViewItem associated with the iterated object model
+	//			TreeViewItem tvi2 = ic.ItemContainerGenerator.ContainerFromItem(i) as TreeViewItem;
+
+	//			if (tvi2 == null)
+	//				break;
+	//			else
+	//				OpenTreeViewItem(tvi2, area);
+
+	//		}
+	//	}
+	//	else
+	//	{
+	//		tvi.IsExpanded = true;
+	//		tvi.IsSelected = true;
+	//	}
+
+	/** This creates the list of parents that need to be found within the treeview. It is starting with the
+	 * root that needs to be found first, then working down a tree until the tag's parent is found **/
+	//private List<AreaModel> FindListOfParents(string searchString, string searchProperty)
+	//{
+	//	List<AreaModel> returnedAreaModels = new List<AreaModel>();
+
+	//	foreach (AreaModel area in ((List<AreaModel>)AreaTreeView.ItemsSource))
+	//	{
+	//		List<AwxSource> sources = RecurseList(area);
+	//		try
+	//		{
+	//			AwxSource source = searchProperty == "Name"
+	//				? sources.Find(s => s.Name == searchString)
+	//				: sources.Find(s => s.Input1 == searchString);
+
+	//			if (source != null)
+	//			{
+	//				var parentAreas = source.AreaName.Split('\\');
+
+	//				foreach (var parentArea in parentAreas)
+	//				{
+	//					AreaModel tempArea = _allAreas.Find(a => a.Name == parentArea);
+	//					returnedAreaModels.Add(tempArea);
+	//				}
+
+	//				break;
+	//			}
+
+	//		}
+	//		catch (Exception ex)
+	//		{
+	//			MessageBox.Show(ex.Message);
+	//		}
+	//	}
+
+	//	return returnedAreaModels;
+	//}
+
+
 }
 
 

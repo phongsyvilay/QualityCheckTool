@@ -140,14 +140,14 @@
             <TextBlock x:Name="OverlayText" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Grid>
 
-        <DataGrid x:Name="Report" Grid.Row="1" Grid.Column="1" AutoGenerateColumns="False" Margin="0,0,0,0" VerticalAlignment="Stretch" HorizontalScrollBarVisibility="Auto"  CanUserAddRows="False" IsReadOnly="True">
+        <DataGrid x:Name="Report" Grid.Row="1" Grid.Column="1" AutoGenerateColumns="False" Margin="0,0,0,0" VerticalAlignment="Stretch" HorizontalScrollBarVisibility="Auto"  CanUserAddRows="False" CellEditEnding="Report_CellEditEnding">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="ID" Binding="{Binding ID}" Visibility="Hidden"/>
-                <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="Auto"/>
-                <DataGridTextColumn Header="Area" Binding="{Binding Area}" Width="150"/>
-                <DataGridTextColumn Header="Tag Name" Binding="{Binding TagName}" Width="250"/>
-                <DataGridTextColumn Header="Point Name" Binding="{Binding PointName}" Width="350"/>
-                <DataGridTextColumn Header="Point Status" Binding="{Binding PointStatus}" Width="Auto"/>
+                <DataGridTextColumn Header="SourceID" Binding="{Binding SourceID}" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="Auto" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Area" Binding="{Binding Area}" Width="225" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Tag Name" Binding="{Binding TagName}" Width="225" IsReadOnly="False" />
+                <DataGridTextColumn Header="Point Name" Binding="{Binding PointName}" Width="350" IsReadOnly="False"/>
+                <DataGridTextColumn Header="Point Status" Binding="{Binding PointStatus}" Width="100" IsReadOnly="True"/>
             </DataGrid.Columns>
         </DataGrid>
     </Grid>

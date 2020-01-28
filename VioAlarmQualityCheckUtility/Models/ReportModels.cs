@@ -14,5 +14,7 @@ namespace VioAlarmQualityCheckUtility.Models
 		public string TagName { get; set; }
 		public string PointName { get; set; }
 		public string PointStatus { get; set; }
+		public int SourceID { get; set; }
+		public bool MultipleInputs { get; set; }
 	}
 }

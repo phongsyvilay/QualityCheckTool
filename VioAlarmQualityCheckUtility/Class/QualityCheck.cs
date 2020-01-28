@@ -12,7 +12,6 @@ namespace VioAlarmQualityCheckUtility.Class
 	internal class QualityCheck
 	{
 		private SqlServer SqlServer = new SqlServer();
-
 		private readonly FwxClientWrapper fwxClientWrapper = new FwxClientWrapper();
 		private ReadDoneDelegate readDoneDelegate;
 
@@ -52,12 +51,13 @@ namespace VioAlarmQualityCheckUtility.Class
 					{
 						string[] points = new string[] { };
 						string newWord;
-						string pattern = @"[\(\)\{\}\|\&\!]";
+						string pattern = @"[(){}|&!]|(==\s+\d*)";
 
 
 						if (item.Input1.Contains("x="))
 						{
 							var input1 = item.Input1.Replace("x=", "").Trim();
+							input1 = Regex.Replace(input1, pattern, "");
 
 							report.Add(new ReportModel
 							{
@@ -66,38 +66,43 @@ namespace VioAlarmQualityCheckUtility.Class
 								Area = item.AreaName,
 								TagName = item.Name,
 								PointName = item.Input1,
-								PointStatus =input1.Replace("quality", "").Trim()
+								PointStatus = input1.Replace("quality", "").Trim(),
+								SourceID = item.ID,
+								MultipleInputs = true
+
 							});
+							id++;
 						}
 
 						points = item.Input1.Split('@');
-
-							points = points.Skip(1).ToArray();
+						points = points.Skip(1).ToArray();
 
 
 						for (var i = 0; i < points.Length ; i++)
 						{
-							ReportModel reportModel;
-
-								newWord = "@" + Regex.Replace(points[i], pattern, "").Trim();
-								reportModel = new ReportModel
+							newWord = "@" + Regex.Replace(points[i], pattern, "").Trim();
+								var reportModel = new ReportModel
 								{
 									ID = id,
 									Type = "Alarm",
 									Area = item.AreaName,
 									TagName = item.Name,
 									PointName = newWord,
-									PointStatus = "Updating..."
+									PointStatus = "Updating...",
+									SourceID = item.ID,
+									MultipleInputs = false
 								};
 
 							report.Add(reportModel);
 							id++;
 
-							ReadPointAsync(newWord);
+							ReadPointAsync(newWord, new ReportState
+							{
+								ID = reportModel.ID,
+								Input = newWord
+							});
 						}
 					}
-
-				//((MainWindow)Application.Current.MainWindow).Report.ItemsSource = report;
 
 				return report;
 			}
@@ -135,33 +140,28 @@ namespace VioAlarmQualityCheckUtility.Class
 			if (data != null)
 				foreach (var item in data)
 				{
-					if (item.PointName == result.UserState.ToString())
+					if (item.ID == ((ReportState) result.UserState).ID)
 					{
-						item.PointStatus = result.Value.Status.ToString();
-
+						item.PointStatus = result.Value.Status.IsBad ? "Bad" : result.Value.Status.ToString();
 					}
-
-					if (item.PointName != result.UserState.ToString() && item.PointName.Contains(result.UserState.ToString()))
+					else if (item.MultipleInputs && item.PointStatus.Contains(((ReportState) result.UserState).Input))
 					{
-						item.PointStatus = item.PointStatus.Replace(result.UserState.ToString(), result.Value.Status.ToString());
-						if (item.PointStatus.Contains("Bad"))
+						if (result.Value.Status.IsBad)
 						{
 							item.PointStatus = "Bad";
 						}
 						else
 						{
-							string pattern = @"[\(\)\{\}\|\&\!]";
-							item.PointStatus = Regex.Replace(item.PointStatus, pattern, "");
-
-							if (!item.PointStatus.Contains("@"))
-							{
-								item.PointStatus = "Good";
-							}
+							item.PointStatus = item.PointStatus.Replace(((ReportState)result.UserState).Input, result.Value.Status.ToString());
 						}
+					}
+					else if (item.MultipleInputs && !item.PointStatus.Contains("@"))
+					{
+						item.PointStatus = item.PointStatus.Contains("Bad") ? "Bad" : "Good";
+
 					}
 				}
 
-			//((MainWindow)Application.Current.MainWindow).Report.ItemsSource = data;
 			((MainWindow)Application.Current.MainWindow).Report.Items.Refresh();
 		}
 
@@ -169,38 +169,17 @@ namespace VioAlarmQualityCheckUtility.Class
 		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		public void ReadPointAsync(string pointName)
+		public void ReadPointAsync(string pointName, ReportState state)
 		{
-			fwxClientWrapper.ReadAsync(pointName, readDoneDelegate, pointName);
+			fwxClientWrapper.ReadAsync(pointName, readDoneDelegate, state);
+			
 		}
 
-
-		//readDoneDelegate = new ReadDoneDelegate(ReadDoneCallback);
-
-		//foreach (var item in awxSourceList)
-		//{
-		//    if (item.Input1.Contains("@"))
-		//    {
-		//        string clean = item.Input1.Replace("x=", "")
-		//            //.Replace("(", "")
-		//            //.Replace(")", "")
-		//            .Replace("{", "")
-		//            .Replace("}", "")
-		//            .Replace("|", "")
-		//            .Replace("&", "")
-		//            .Replace("!", "");
-
-		//        string[] points = clean.Split('@');
-
-		//        for (int i = 0; i < points.Length - 1; i++)
-		//        {
-		//            ReadPointAsync("@" + points[i + 1].Trim());
-
-		//        }
-		//    }
-
-		//}
-
+		public class ReportState
+		{
+			public int ID { get; set; }
+			public string Input { get; set; }
+		}
 
 		// Asset Equipment Properties
 		//ascEquipmentPropertyList = SqlServer.GetAssetEquipmentProperties();
@@ -228,9 +207,6 @@ namespace VioAlarmQualityCheckUtility.Class
 		//        }
 		//    }
 		//}
-
-
-
 
 	}
 }
