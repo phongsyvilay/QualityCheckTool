@@ -73,7 +73,6 @@
     <Compile Include="Class\NetworkShareAccessor.cs" />
     <Compile Include="Models\AreaModel.cs" />
     <Compile Include="Models\Source2Area.cs" />
-    <Compile Include="Properties\Annotations.cs" />
     <Compile Include="Windows\WorkbenchLogin.xaml.cs">
       <DependentUpon>WorkbenchLogin.xaml</DependentUpon>
     </Compile>
