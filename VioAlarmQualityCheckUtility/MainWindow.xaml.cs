@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using VioAlarmQualityCheckUtility.Class;
@@ -17,7 +16,7 @@ namespace VioAlarmQualityCheckUtility
 	public partial class MainWindow
 	{
 		private readonly SqlServer _sqlServer = new SqlServer();
-		List<ReportModel> _allReports = new List<ReportModel>();
+		private List<ReportModel> _allReports = new List<ReportModel>();
 		private List<ReportModel> _foundReports = new List<ReportModel>();
 
 		private string _netPassword = "";
@@ -188,10 +187,12 @@ namespace VioAlarmQualityCheckUtility
 
 					var ash = new AreaSourceHandler();
 					var allAreas = ash.GetAreas(instance, database, username, password, sources);
-					IList<AreaModel> selectedArea = allAreas.FindAll(i => i.RecursiveParentId == 0);
+					IList<AreaModel> selectedAreas = allAreas.FindAll(i => i.RecursiveParentId == 0);
 
-					AreaTreeView.ItemsSource = selectedArea;
+					AreaTreeView.ItemsSource = selectedAreas;
 					Report.ItemsSource = _allReports = qualityCheck.CheckAll(allAreas[0].SourcesList);
+
+
 				}
 				catch (Exception ex)
 				{
@@ -423,7 +424,7 @@ namespace VioAlarmQualityCheckUtility
 		 **/
 		private void AreaTreeView_OnSelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
 		{
-			AreaModel area = (AreaModel) e.NewValue;
+			AreaModel area = (AreaModel)e.NewValue;
 
 			if (area.Name == "All Tags")
 			{
@@ -591,39 +592,34 @@ namespace VioAlarmQualityCheckUtility
 		 **/
 		private void Report_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
 		{
-			bool different = false;
 			string editedText = ((TextBox)e.EditingElement).Text;
-			ReportModel rm = (ReportModel) e.Row.Item;
+			ReportModel rm = (ReportModel)e.Row.Item;
 
-			if (((DataGrid)sender).CurrentColumn?.Header.ToString() == "Tag Name")
+			// Goes into this statement for tag name 
+			if (((DataGrid)sender).CurrentColumn?.Header.ToString() == "Tag Name" && e.Column.Header.ToString() == "Tag Name")
 			{
 				if (editedText != rm.TagName)
-					different = true;
-
-				if (different)
 				{
+
 					_sqlServer.UpdateAwxSourceTagName(rm, editedText);
 					Notification_Popup();
 				}
 			}
-			else
-			{
-				// Goes into this statement for point name 
-				if (editedText != rm.PointName)
-					different = true;
 
-				if (different)
+			// Goes into this statement for point name 
+			if (((DataGrid)sender).CurrentColumn?.Header.ToString() == "Point Name" && e.Column.Header.ToString() == "Point Name")
+			{
+				if (editedText != rm.PointName)
 				{
-					if (rm.PointName.Contains("x="))
-					{
-						Console.WriteLine("here");
-					}
-					_sqlServer.UpdateAwxSourcePointName(rm, editedText);
+					ReportModel original = _allReports.Find(r => r.SourceID == rm.SourceID);
+					string newEditedText = original.PointName.Replace(rm.PointName, editedText);
+
+					_sqlServer.UpdateAwxSourcePointName(rm, newEditedText);
 					Notification_Popup();
 				}
 			}
-
 		}
+
 
 		/**
 		 * Removes the cancel notification

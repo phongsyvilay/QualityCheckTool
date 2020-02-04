@@ -6,12 +6,12 @@ using System.Threading.Tasks;
 
 namespace VioAlarmQualityCheckUtility.Models
 {
-	class AscEquipmentProperty
-	{
-		public string ParentID { get; set; }
-		public string Name { get; set; }
-		public string RealtimePointName { get; set; }
-	}
+	//class AscEquipmentProperty
+	//{
+	//	public string ParentID { get; set; }
+	//	public string Name { get; set; }
+	//	public string RealtimePointName { get; set; }
+	//}
 
 	public class AwxSource
 	{

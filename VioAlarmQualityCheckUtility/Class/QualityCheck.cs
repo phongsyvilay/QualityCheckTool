@@ -11,9 +11,9 @@ namespace VioAlarmQualityCheckUtility.Class
 {
 	internal class QualityCheck
 	{
-		private SqlServer SqlServer = new SqlServer();
-		private readonly FwxClientWrapper fwxClientWrapper = new FwxClientWrapper();
-		private ReadDoneDelegate readDoneDelegate;
+		//private SqlServer SqlServer = new SqlServer();
+		private readonly FwxClientWrapper _fwxClientWrapper = new FwxClientWrapper();
+		private ReadDoneDelegate _readDoneDelegate;
 
 
 		// Check All
@@ -35,24 +35,21 @@ namespace VioAlarmQualityCheckUtility.Class
 				}
 
 				var awxSourceList = sources;
-				var ascEquipmentPropertyList = new List<AscEquipmentProperty>();
-
 				var report = new List<ReportModel>();
-
 				var id = 0;
+				
 
+
+				//var ascEquipmentPropertyList = new List<AscEquipmentProperty>();
 				// Alarm Sources
 				//awxSourceList = SqlServer.GetAlarmSources();
 
-				readDoneDelegate = ReadDoneCallBack;
+				_readDoneDelegate = ReadDoneCallBack;
 
 				foreach (AwxSource item in awxSourceList)
 					if (item.Input1.Contains("@"))
 					{
-						string[] points = new string[] { };
-						string newWord;
 						string pattern = @"[(){}|&!]|(==\s+\d*)";
-
 
 						if (item.Input1.Contains("x="))
 						{
@@ -74,13 +71,13 @@ namespace VioAlarmQualityCheckUtility.Class
 							id++;
 						}
 
-						points = item.Input1.Split('@');
+						var points = item.Input1.Split('@');
 						points = points.Skip(1).ToArray();
 
 
 						for (var i = 0; i < points.Length ; i++)
 						{
-							newWord = "@" + Regex.Replace(points[i], pattern, "").Trim();
+							var newWord = "@" + Regex.Replace(points[i], pattern, "").Trim();
 								var reportModel = new ReportModel
 								{
 									ID = id,
@@ -98,7 +95,7 @@ namespace VioAlarmQualityCheckUtility.Class
 
 							ReadPointAsync(newWord, new ReportState
 							{
-								ID = reportModel.ID,
+								Id = reportModel.ID,
 								Input = newWord
 							});
 						}
@@ -118,7 +115,7 @@ namespace VioAlarmQualityCheckUtility.Class
 		{
 			try
 			{
-				var sampleValue = fwxClientWrapper.Read(@"@RSLinx OPC Server\[CC004]U100005.UNIT_EN.Value");
+				var sampleValue = _fwxClientWrapper.Read(@"@RSLinx OPC Server\[CC004]U100005.UNIT_EN.Value");
 				return sampleValue.Status.ToString() != "Bad - User Access Denied";
 			}
 			catch (Exception e)
@@ -135,12 +132,12 @@ namespace VioAlarmQualityCheckUtility.Class
 		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		private void ReadDoneCallBack(ReadDoneResult result)
 		{
-			var data = (List<ReportModel>)((MainWindow)Application.Current.MainWindow).Report.ItemsSource;
+			var data = (List<ReportModel>)((MainWindow)Application.Current.MainWindow)?.Report.ItemsSource;
 
 			if (data != null)
 				foreach (var item in data)
 				{
-					if (item.ID == ((ReportState) result.UserState).ID)
+					if (item.ID == ((ReportState) result.UserState).Id)
 					{
 						item.PointStatus = result.Value.Status.IsBad ? "Bad" : result.Value.Status.ToString();
 					}
@@ -162,7 +159,7 @@ namespace VioAlarmQualityCheckUtility.Class
 					}
 				}
 
-			((MainWindow)Application.Current.MainWindow).Report.Items.Refresh();
+				//((MainWindow)Application.Current.MainWindow)?.Report.Items.Refresh();
 		}
 
 		// Read Point Async
@@ -171,13 +168,13 @@ namespace VioAlarmQualityCheckUtility.Class
 		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		public void ReadPointAsync(string pointName, ReportState state)
 		{
-			fwxClientWrapper.ReadAsync(pointName, readDoneDelegate, state);
+			_fwxClientWrapper.ReadAsync(pointName, _readDoneDelegate, state);
 			
 		}
 
 		public class ReportState
 		{
-			public int ID { get; set; }
+			public int Id { get; set; }
 			public string Input { get; set; }
 		}
 

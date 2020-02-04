@@ -61,7 +61,7 @@
 
             </StackPanel>
 
-            <Button x:Name="SearchButton" Grid.Column="0" Grid.Row="5" HorizontalAlignment="Left" Content="Search" Width="65" Margin="20, 10, 0, 10" Click="SearchButton_Click" FontSize="13" />
+            <Button x:Name="SearchButton" Grid.Column="0" Grid.Row="5" HorizontalAlignment="Left" Content="Search" Width="65" Margin="20, 10, 0, 30" Click="SearchButton_Click" FontSize="13" />
         </Grid>
         <Border BorderThickness="1, 0, 0, 0" BorderBrush="#707070"  Grid.Row="0" Grid.Column="1">
             <Grid>
@@ -107,30 +107,40 @@
                 <ComboBox x:Name="SqlServerDatabase_ComboBox" Height="24" Grid.Row="2" Grid.Column="3"  Margin="18, 10, 0, 0" Width="160" SelectionChanged="SqlServerDatabase_ComboBox_SelectionChanged" />
                 <TextBlock x:Name="DBSelectBox" IsHitTestVisible="False" Grid.Row="2" Grid.Column="3" Visibility="Hidden" Text="Select a Database" Margin="24,16,54,5"/>
                 <Button  Grid.Row="2" Grid.Column="4" Click="Run" Content="Run Quality Check" HorizontalAlignment="Left" Margin="15, 10, 15, 0" Width="127" FontSize="13" Height="25"/>
+
+                <!--Search for... Section-->
                 <Border Grid.Row="0" Grid.RowSpan="4" Grid.Column="5" BorderThickness="1, 0, 0, 0" BorderBrush="#707070">
                     <StackPanel Orientation="Vertical">
                         <TextBlock  Background="#414141" Foreground="White" FontSize="20" Height="30" Padding="20, 0, 0, 0">Search for...</TextBlock>
-                        <StackPanel Orientation="Horizontal" Margin="20, 10, 5, 0">
+
+                        <!--Tag Name Searchbox Section-->
+                        <TextBlock FontWeight="DemiBold" FontSize="12" Height="16" Margin="20, 5, 0, 3">Tag Name</TextBlock>
+                        <StackPanel Orientation="Horizontal" Margin="20, 0, 0, 2">
                             <TextBox x:Name="TagSearchbox" Width="150"  HorizontalAlignment="Left" Height="24" Text="Tag Name" GotFocus="TagSearchbox_GotFocus" LostFocus="TagSearchbox_LostFocus"/>
                             <Button x:Name="TagSearchButton" HorizontalAlignment="Left" Content="Search" Width="60" Margin="10, 0, 0, 1" Click="TagSearchButton_Click" FontSize="13" />
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal"  Margin="20, 5, 5, 0">
+                        <StackPanel Orientation="Horizontal"  Margin="20, 0, 5, 0">
                             <RadioButton x:Name="SearchExact"  Content="Exact" GroupName="SearchButtons" IsChecked="True"></RadioButton>
                             <RadioButton x:Name="SearchContains" Content="Contains" GroupName="SearchButtons" Margin="10, 0, 0, 10"></RadioButton>
                         </StackPanel>
+
+                        <!--Point Name Searchbox Section-->
                         <Border BorderBrush="LightSlateGray" BorderThickness="0, 1, 0, 0" >
-                            <StackPanel Orientation="Horizontal" Margin="20, 10, 0, 0">
+                            <TextBlock FontWeight="DemiBold" FontSize="12" Height="16" Margin="20, 5, 0, 3">Point Name</TextBlock>
+                        </Border>
+                        <StackPanel Orientation="Horizontal"  Margin="20, 0, 0, 2">
                                 <TextBox x:Name="PointSearchbox" Width="150"  HorizontalAlignment="Left" Height="24" Text="Point Name" LostFocus="PointSearchbox_LostFocus" GotFocus="PointSearchbox_GotFocus"/>
                                 <Button x:Name="PointSearchButton" HorizontalAlignment="Left" Content="Search" Width="60" Margin="10, 0, 0, 1" Click="PointSearchButton_Click" FontSize="13" />
                             </StackPanel>
-                        </Border>
 
-                        <StackPanel Orientation="Horizontal"  Margin="20, 5, 5, 10">
+                        <StackPanel Orientation="Horizontal"  Margin="20, 0, 0, 10">
                             <RadioButton x:Name="PointExact"  Content="Exact"  IsChecked="True"></RadioButton>
                             <RadioButton x:Name="PointContains" Content="Contains"  Margin="10, 0, 0, 0"></RadioButton>
                         </StackPanel>
                     </StackPanel>
                 </Border>
+
+                <!--End of Search for... section-->
             </Grid>
         </Border>
 
@@ -143,16 +153,19 @@
 
         <DataGrid x:Name="Report" Grid.Row="1" Grid.Column="1" AutoGenerateColumns="False" Margin="0,0,0,0" VerticalAlignment="Stretch" HorizontalScrollBarVisibility="Auto"  CanUserAddRows="False" CellEditEnding="Report_CellEditEnding">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="Auto" IsReadOnly="True"/>
-                <DataGridTextColumn Header="Area" Binding="{Binding Area}" Width="225" IsReadOnly="True"/>
-                <DataGridTextColumn Header="Tag Name" Binding="{Binding TagName}" Width="225" IsReadOnly="False" />
-                <DataGridTextColumn Header="Point Name" Binding="{Binding PointName}" Width="350" IsReadOnly="False"/>
+                <!--<DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="Auto" IsReadOnly="True"/>-->
+                <DataGridTextColumn Header="Area" Binding="{Binding Area}" Width="200" IsReadOnly="True"/>
+                <DataGridTextColumn x:Name="TagNameColumn" Header="Tag Name" Binding="{Binding TagName}" Width="225" IsReadOnly="False" />
+                <DataGridTextColumn x:Name="PointNameColumn" Header="Point Name" Binding="{Binding PointName}" Width="350" IsReadOnly="False"/>
                 <DataGridTextColumn Header="Point Status" Binding="{Binding PointStatus}" Width="100" IsReadOnly="True"/>
             </DataGrid.Columns>
         </DataGrid>
+
+        <!--Notification Popup-->
         <StackPanel x:Name="Notification" Background="#FFFFDF35" Grid.Row="1" Grid.Column="1" Height="20" VerticalAlignment="Top" Orientation="Horizontal" Visibility="Hidden">
             <Image Source="/Images/cancel.png" Height="8" Margin="4, 0, 4, 0" MouseDown="NotificationCancel"/>
-            <TextBlock Text="Changes have been made to one or more tags. Refresh the Workbench to view the changes." Foreground="#FF323232" Margin="0, 1, 0, 0"/> 
+            <TextBlock Foreground="#FF323232" Margin="0, 1, 0, 0"> Changes have been made to one or more tags. Refresh Workbench to view changes. To view the changes in this window, click the <Italic>Run Quality Check</Italic> button.</TextBlock> 
         </StackPanel>
+        <!--End of Notification Popup-->
     </Grid>
 </Window>

@@ -244,10 +244,15 @@ namespace VioAlarmQualityCheckUtility.Class
 				cmd.Connection.Close();
 
 			}
+			catch (SqlException)
+			{
+				MessageBox.Show("Unable to update tag name.");
+				cmd.Connection.Close();
+			}
 			catch (Exception e)
 			{
-				Console.WriteLine(e);
-				throw;
+				MessageBox.Show("Unable to update tag name.");
+				cmd.Connection.Close();
 			}
 		}
 
@@ -267,10 +272,15 @@ namespace VioAlarmQualityCheckUtility.Class
 				cmd.Connection.Close();
 
 			}
+			catch (SqlException)
+			{
+				MessageBox.Show("Unable to update point name.");
+				cmd.Connection.Close();
+			}
 			catch (Exception e)
 			{
-				Console.WriteLine(e);
-				throw;
+				MessageBox.Show("Unable to update point name");
+				cmd.Connection.Close();
 			}
 		}
 
@@ -278,45 +288,45 @@ namespace VioAlarmQualityCheckUtility.Class
 		// Function:        
 		// Description:     
 		// ==============================================================================================================================================================
-		public List<AscEquipmentProperty> GetAssetEquipmentProperties()
-		{
-			List<AscEquipmentProperty> data = new List<AscEquipmentProperty>();
+		//public List<AscEquipmentProperty> GetAssetEquipmentProperties()
+		//{
+		//	List<AscEquipmentProperty> data = new List<AscEquipmentProperty>();
 
-			SqlConnection sqlConn = new SqlConnection("Data Source=" + Properties.Settings.Default.SqlServerInstance + ";Integrated Security=True");
+		//	SqlConnection sqlConn = new SqlConnection("Data Source=" + Properties.Settings.Default.SqlServerInstance + ";Integrated Security=True");
 
-			SqlCommand cmd = new SqlCommand();
+		//	SqlCommand cmd = new SqlCommand();
 
-			try
-			{
-				cmd.CommandText = "SELECT ParentID, Name, RealtimePointName FROM " + Properties.Settings.Default.SqlServerDatabase + ".dbo.ASC_EquipmentProperties;";
-				cmd.CommandType = CommandType.Text;
-				cmd.Connection = sqlConn;
-				cmd.Connection.Open();
+		//	try
+		//	{
+		//		cmd.CommandText = "SELECT ParentID, Name, RealtimePointName FROM " + Properties.Settings.Default.SqlServerDatabase + ".dbo.ASC_EquipmentProperties;";
+		//		cmd.CommandType = CommandType.Text;
+		//		cmd.Connection = sqlConn;
+		//		cmd.Connection.Open();
 
-				var reader = cmd.ExecuteReader();
+		//		var reader = cmd.ExecuteReader();
 
-				while (reader.Read())
-				{
-					var ascEquipmentProperty = new AscEquipmentProperty
-					{
-						ParentID = reader[0].ToString(),
-						Name = reader[1].ToString(),
-						RealtimePointName = reader[2].ToString()
-					};
+		//		while (reader.Read())
+		//		{
+		//			var ascEquipmentProperty = new AscEquipmentProperty
+		//			{
+		//				ParentID = reader[0].ToString(),
+		//				Name = reader[1].ToString(),
+		//				RealtimePointName = reader[2].ToString()
+		//			};
 
-					data.Add(ascEquipmentProperty);
-				}
+		//			data.Add(ascEquipmentProperty);
+		//		}
 
-				reader.Close();
+		//		reader.Close();
 
-				cmd.Connection.Close();
-			}
-			catch (Exception)
-			{
-				MessageBox.Show("GetAssetEquipmentProperty Error");
-			}
+		//		cmd.Connection.Close();
+		//	}
+		//	catch (Exception)
+		//	{
+		//		MessageBox.Show("GetAssetEquipmentProperty Error");
+		//	}
 
-			return data;
-		}
+		//	return data;
+		//}
 	}
 }
