@@ -37,7 +37,6 @@ namespace VioAlarmQualityCheckUtility.Class
 				var awxSourceList = sources;
 				var report = new List<ReportModel>();
 				var id = 0;
-				
 
 
 				//var ascEquipmentPropertyList = new List<AscEquipmentProperty>();
@@ -105,6 +104,7 @@ namespace VioAlarmQualityCheckUtility.Class
 			}
 			catch (Exception e)
 			{
+				// ReSharper disable once PossibleIntendedRethrow
 				throw e;
 			}
 		}

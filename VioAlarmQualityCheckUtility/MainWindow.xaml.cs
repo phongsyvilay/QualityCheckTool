@@ -43,6 +43,7 @@ namespace VioAlarmQualityCheckUtility
 			Settings.Default.SqlServerDatabase = "";
 
 			var sqlServerInstances = new List<string>();
+			sqlServerInstances.Add("-- Select a Server Instance --");
 
 			if (input.Equals(".\\"))
 				foreach (var item in SqlServer.GetLocalSqlInstances().ToList())
@@ -52,7 +53,7 @@ namespace VioAlarmQualityCheckUtility
 					sqlServerInstances.Add(item);
 
 			SqlServerInstance_ComboBox.ItemsSource = sqlServerInstances;
-			SelectBox.Visibility = Visibility.Visible;
+			SqlServerInstance_ComboBox.SelectedIndex = 0;
 		}
 
 		/** Generates all the sources that are connected with the selected area and its children **/
@@ -112,7 +113,6 @@ namespace VioAlarmQualityCheckUtility
 				{
 					var sqlServerInstances = _sqlServer.GetRemoteInstances(_netConnection, _netUsername, _netPassword);
 					SqlServerInstance_ComboBox.ItemsSource = sqlServerInstances;
-					SelectBox.Visibility = Visibility.Visible;
 				}
 				catch (Exception)
 				{
@@ -139,8 +139,7 @@ namespace VioAlarmQualityCheckUtility
 			Report.ItemsSource = null;
 			AreaTreeView.ItemsSource = null;
 
-			SelectBox.Visibility = Visibility.Hidden;
-			DBSelectBox.Visibility = Visibility.Hidden;
+			Overlay.Visibility = Visibility.Collapsed;
 
 		}
 
@@ -154,89 +153,52 @@ namespace VioAlarmQualityCheckUtility
 
 		public void Run(object sender, RoutedEventArgs e)
 		{
-			if (SqlServerDatabase_ComboBox.SelectedItem != null)
+
+			QualityCheck qualityCheck = new QualityCheck();
+
+			try
 			{
-				string username;
-				string password;
-				var database = SqlServerDatabase_ComboBox.SelectedItem.ToString();
-				var connection = NetConnection.Text;
-				var instance = SqlServerInstance_ComboBox.Text;
-				QualityCheck qualityCheck = new QualityCheck();
+				var ash = new AreaSourceHandler();
+				var sources = _sqlServer.QueryAwxSources();
+				var allAreas = ash.GetAreas(sources);
 
-				if (RemoteMachine.IsChecked == true)
-					instance = connection + "\\" + instance;
+				AreaTreeView.ItemsSource = allAreas.FindAll(i => i.RecursiveParentId == 0);
+				Report.ItemsSource = _allReports = qualityCheck.CheckAll(allAreas[0].SourcesList);
 
-				if (_serverUsername != "" && _serverPassword != "")
+
+			}
+			catch (Exception ex)
+			{
+				//MessageBox.Show(ex.ToString());
+				MessageBox.Show("Could not run quality check.");
+
+			}
+
+		}
+
+		/** Button that is searching for tag or point that is exactly the input or
+		 * contains the input.
+		 **/
+		private void NameSearchButton_Click(object sender, RoutedEventArgs e)
+		{
+			if (NameSearch_ComboBox.SelectedIndex != 0)
+			{
+				if (NameSearch_ComboBox.SelectedIndex == 1)
 				{
-					username = _serverUsername;
-					password = _serverPassword;
+					if(SearchExact.IsChecked != null && (bool) SearchExact.IsChecked)
+						TagSearch(SearchBox.Text, "exact");
+
+					if (SearchContains.IsChecked != null && (bool)SearchContains.IsChecked)
+						TagSearch(SearchBox.Text, "contains");
 				}
 				else
 				{
-					username = _netUsername;
-					password = _netPassword;
+					if (SearchExact.IsChecked != null && (bool)SearchExact.IsChecked)
+						PointSearch(SearchBox.Text, "exact");
+
+					if (SearchContains.IsChecked != null && (bool)SearchContains.IsChecked)
+						PointSearch(SearchBox.Text, "contains");
 				}
-
-				try
-				{
-					List<AwxSource> sources;
-					if (username != "" && password != "")
-						sources = _sqlServer.GetRemoteAlarmSources(instance, username, password);
-					else
-						sources = _sqlServer.GetAlarmSources();
-
-					var ash = new AreaSourceHandler();
-					var allAreas = ash.GetAreas(instance, database, username, password, sources);
-					IList<AreaModel> selectedAreas = allAreas.FindAll(i => i.RecursiveParentId == 0);
-
-					AreaTreeView.ItemsSource = selectedAreas;
-					Report.ItemsSource = _allReports = qualityCheck.CheckAll(allAreas[0].SourcesList);
-
-
-				}
-				catch (Exception ex)
-				{
-					MessageBox.Show(ex.ToString());
-					MessageBox.Show("Could not run quality check.");
-
-				}
-			}
-		}
-
-		/** Search button that is searching for the input which is a tag **/
-		private void TagSearchButton_Click(object sender, RoutedEventArgs e)
-		{
-			try
-			{
-				string tag = TagSearchbox.Text;
-
-				if (tag != "")
-				{
-					TagSearch(tag, SearchExact.IsChecked == true ? "exact" : "contains");
-				}
-			}
-			catch (Exception)
-			{
-				MessageBox.Show("Tag search error.");
-			}
-		}
-
-
-		private void PointSearchButton_Click(object sender, RoutedEventArgs e)
-		{
-			try
-			{
-				string tag = PointSearchbox.Text;
-
-				if (tag != "")
-				{
-					if (tag != "")
-						PointSearch(tag, PointExact.IsChecked == true ? "exact" : "contains");
-				}
-			}
-			catch (Exception)
-			{
-				MessageBox.Show("Point name search error.");
 			}
 		}
 
@@ -359,44 +321,47 @@ namespace VioAlarmQualityCheckUtility
 		 **/
 		private void SqlServerInstance_ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
-			try
-			{
-				Settings.Default.SqlServerInstance = SqlServerInstance_ComboBox.SelectedItem.ToString();
-
-
-				if (LocalMachine.IsChecked == true || LocalNetwork.IsChecked == true)
+			if (SqlServerInstance_ComboBox.SelectedIndex != 0) { 
+				try
 				{
-					if (_serverUsername == "" && _serverPassword == "")
-						SqlServerDatabase_ComboBox.ItemsSource = SqlServer.GetLocalSqlInstanceDatabases();
+					Settings.Default.SqlServerInstance = SqlServerInstance_ComboBox.SelectedItem.ToString();
+
+					if (LocalMachine.IsChecked == true || LocalNetwork.IsChecked == true)
+					{
+						if (_serverUsername == "" && _serverPassword == "")
+							SqlServerDatabase_ComboBox.ItemsSource = SqlServer.GetLocalSqlInstanceDatabases();
+						else
+							SqlServerDatabase_ComboBox.ItemsSource =
+								SqlServer.GetSqlInstanceDatabases(Settings.Default.SqlServerInstance, _serverUsername,
+									_serverPassword);
+					}
 					else
-						SqlServerDatabase_ComboBox.ItemsSource =
-							SqlServer.GetSqlInstanceDatabases(Settings.Default.SqlServerInstance, _serverUsername,
+					{
+						if (_serverUsername == "" && _serverPassword == "")
+							SqlServerDatabase_ComboBox.ItemsSource = SqlServer.GetSqlInstanceDatabases(
+								_netConnection + "\\" + Settings.Default.SqlServerInstance, _netUsername, _netPassword);
+						else
+							SqlServerDatabase_ComboBox.ItemsSource = SqlServer.GetSqlInstanceDatabases(
+								_netConnection + "\\" + Settings.Default.SqlServerInstance, _serverUsername,
 								_serverPassword);
+					}
+
+					SqlServerDatabase_ComboBox.SelectedIndex = 0;
+
 				}
-				else
+				catch (Exception)
 				{
-					if (_serverUsername == "" && _serverPassword == "")
-						SqlServerDatabase_ComboBox.ItemsSource = SqlServer.GetSqlInstanceDatabases(
-							_netConnection + "\\" + Settings.Default.SqlServerInstance, _netUsername, _netPassword);
-					else
-						SqlServerDatabase_ComboBox.ItemsSource = SqlServer.GetSqlInstanceDatabases(
-							_netConnection + "\\" + Settings.Default.SqlServerInstance, _serverUsername,
-							_serverPassword);
+					SqlServerInstance_ComboBox.SelectionChanged -= SqlServerInstance_ComboBox_SelectionChanged;
+
+					SqlServerInstance_ComboBox.SelectedIndex = -1;
+
+					SqlServerInstance_ComboBox.SelectionChanged += SqlServerInstance_ComboBox_SelectionChanged;
 				}
-
-				SelectBox.Visibility = Visibility.Hidden;
-				DBSelectBox.Visibility = Visibility.Visible;
-
 			}
-			catch (Exception)
+			else
 			{
-				SqlServerInstance_ComboBox.SelectionChanged -= SqlServerInstance_ComboBox_SelectionChanged;
-
-				SqlServerInstance_ComboBox.SelectedIndex = -1;
-				DBSelectBox.Visibility = Visibility.Hidden;
-				SelectBox.Visibility = Visibility.Visible;
-
-				SqlServerInstance_ComboBox.SelectionChanged += SqlServerInstance_ComboBox_SelectionChanged;
+				Settings.Default.SqlServerInstance = "";
+				Settings.Default.SqlServerDatabase = "";
 			}
 		}
 
@@ -406,7 +371,6 @@ namespace VioAlarmQualityCheckUtility
 			try
 			{
 				Settings.Default.SqlServerDatabase = SqlServerDatabase_ComboBox.SelectedItem.ToString();
-				DBSelectBox.Visibility = Visibility.Hidden;
 			}
 			catch (Exception)
 			{
@@ -547,38 +511,21 @@ namespace VioAlarmQualityCheckUtility
 
 		}
 
-		private void TagSearchbox_GotFocus(object sender, RoutedEventArgs e)
+		private void SearchBox_LostFocus(object sender, RoutedEventArgs e)
 		{
-			TagSearchbox.Text = TagSearchbox.Text == "Tag Name" ? "" : TagSearchbox.Text;
-		}
-
-		private void TagSearchbox_LostFocus(object sender, RoutedEventArgs e)
-		{
-			if (TagSearchbox.Text == "")
+			if (SearchBox.Text == "")
 			{
-				TagSearchbox.Text = "Tag Name";
+				SearchBox.Text = "Search Input";
 			}
 			else
 			{
-				TagSearchbox.Text = TagSearchbox.Text.Trim();
+				SearchBox.Text = SearchBox.Text.Trim();
 			}
 		}
 
-		private void PointSearchbox_LostFocus(object sender, RoutedEventArgs e)
+		private void SearchBox_GotFocus(object sender, RoutedEventArgs e)
 		{
-			if (PointSearchbox.Text == "")
-			{
-				PointSearchbox.Text = "Point Name";
-			}
-			else
-			{
-				PointSearchbox.Text = PointSearchbox.Text.Trim();
-			}
-		}
-
-		private void PointSearchbox_GotFocus(object sender, RoutedEventArgs e)
-		{
-			PointSearchbox.Text = PointSearchbox.Text == "Point Name" ? "" : PointSearchbox.Text;
+			SearchBox.Text = SearchBox.Text == "Search Input" ? "" : SearchBox.Text;
 
 		}
 
@@ -596,19 +543,19 @@ namespace VioAlarmQualityCheckUtility
 			ReportModel rm = (ReportModel)e.Row.Item;
 
 			// Goes into this statement for tag name 
-			if (((DataGrid)sender).CurrentColumn?.Header.ToString() == "Tag Name" && e.Column.Header.ToString() == "Tag Name")
-			{
-				if (editedText != rm.TagName)
-				{
+			//if (((DataGrid)sender).CurrentColumn?.Header.ToString() == "Tag Name" && e.Column.Header.ToString() == "Tag Name")
+			//{
+			//	if (editedText != rm.TagName)
+			//	{
 
-					_sqlServer.UpdateAwxSourceTagName(rm, editedText);
-					Notification_Popup();
-				}
-			}
+			//		_sqlServer.UpdateAwxSourceTagName(rm, editedText);
+			//		Notification_Popup();
+			//	}
+			//}
 
-			// Goes into this statement for point name 
-			if (((DataGrid)sender).CurrentColumn?.Header.ToString() == "Point Name" && e.Column.Header.ToString() == "Point Name")
-			{
+			//// Goes into this statement for point name 
+			//if (((DataGrid)sender).CurrentColumn?.Header.ToString() == "Point Name" && e.Column.Header.ToString() == "Point Name")
+			//{
 				if (editedText != rm.PointName)
 				{
 					ReportModel original = _allReports.Find(r => r.SourceID == rm.SourceID);
@@ -617,7 +564,7 @@ namespace VioAlarmQualityCheckUtility
 					_sqlServer.UpdateAwxSourcePointName(rm, newEditedText);
 					Notification_Popup();
 				}
-			}
+			//}
 		}
 
 
@@ -639,6 +586,8 @@ namespace VioAlarmQualityCheckUtility
 			Notification.Visibility = Visibility.Visible;
 			Report.Margin = new Thickness(0, 20, 0, 0);
 		}
+
+		
 	}
 	/************************************************************************
 	 * Unused methods

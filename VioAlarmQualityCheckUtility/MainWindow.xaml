@@ -9,16 +9,16 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" MinWidth="381"/>
-            <ColumnDefinition/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="5"/>
+            <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        
+
 
         <TreeView x:Name="AreaTreeView" Grid.Row="1" Grid.Column="0" ItemsSource="{Binding}" SelectedItemChanged="AreaTreeView_OnSelectedItemChanged">
             <TreeView.ItemTemplate>
@@ -28,44 +28,31 @@
             </TreeView.ItemTemplate>
         </TreeView>
 
+        <GridSplitter Grid.Row="0"  Grid.Column="1" Grid.RowSpan="2" HorizontalAlignment="Stretch"/>
 
-        <Grid Margin="20, 0, 10, 0" MaxHeight="300" Grid.Row="0" Grid.Column="0" MinWidth="351">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-
-            <TextBlock Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="0"  Margin="-20, 0, -10, 0" Background="#414141" Foreground="White" FontSize="20" Height="30" Padding="20, 0, 0, 0">Search for Servers</TextBlock>
-
-            <StackPanel Orientation="Horizontal"  Grid.Column="0" Grid.Row="1" Margin="0, 25, 0, 0">
+        <!-- Begin Search for Servers Section-->
+        <DockPanel Grid.Row="0" Grid.Column="0" VerticalAlignment="Top" >
+            <TextBlock DockPanel.Dock="Top"  Background="#414141" Foreground="White" FontSize="20" Height="30" Padding="20, 0, 0, 0">Search for Servers</TextBlock>
+            <Rectangle Width="20" DockPanel.Dock="Left"/>
+            <StackPanel Orientation="Vertical" Margin="0, 15, 0, 0">
                 <RadioButton x:Name="LocalMachine" GroupName="Radio" IsChecked="True" Checked="radioButton_Checked" Content="Local Machine"/>
-                <RadioButton x:Name="LocalNetwork" GroupName="Radio" Checked="radioButton_Checked" Content="Local Network" Margin="25, 0, 0, 0"/>
-            </StackPanel>
-
-            <RadioButton x:Name="RemoteMachine" Grid.Column="0" Grid.Row="2"  Margin="0, 10, 0, 0"  GroupName="Radio" Checked="radioButton_Checked" Content="Remote computer via name or IP address"/>
-            <TextBox x:Name="NetConnection" Grid.Column="0" Visibility="Collapsed" Grid.Row="3" Width="326" Margin="20, 10, 5, 0" Height="24" Text="Name or IP Address" 
+                <RadioButton x:Name="LocalNetwork" GroupName="Radio" Checked="radioButton_Checked" Content="Local Network" Margin="0, 5, 0, 0"/>
+                <RadioButton x:Name="RemoteMachine" Margin="0, 5, 0, 0"  GroupName="Radio" Checked="radioButton_Checked" Content="Remote computer via name or IP address"/>
+                <TextBox x:Name="NetConnection" Visibility="Collapsed" HorizontalAlignment="Left" Width="326" Margin="20, 5, 5, 0" Height="24" Text="Name or IP Address" 
                      GotFocus="netConnection_GotFocus" LostFocus="netConnection_LostFocus" />
-            <StackPanel Grid.Row="4" x:Name="NetCredentialPanel" Visibility="Collapsed" HorizontalAlignment="Left" Orientation="Horizontal" Margin="0, 6, 0, 0">
-                <TextBox x:Name="NetUsernameBox" Width="158" Margin="20, 0, 5, 0" Height="24" Text="Login" GotFocus="netUsernameBox_GotFocus" LostFocus="netUsernameBox_LostFocus"/>
-                <PasswordBox x:Name="NetPasswordBox" Width="158" Height="24" Margin="5, 0, 0, 0" Password="Password" GotFocus="netPasswordBox_GotFocus" LostFocus="netPasswordBox_LostFocus"/>
-
-
+                <Button x:Name="SearchButton" HorizontalAlignment="Left" Content="Search" Width="65" Margin="2, 10, 0, 10" Click="SearchButton_Click" FontSize="13" />
+                <StackPanel x:Name="NetCredentialPanel" Visibility="Collapsed" HorizontalAlignment="Left" Orientation="Horizontal" Margin="20, 5, 0, 0">
+                    <TextBox x:Name="NetUsernameBox" Width="158" Margin="0, 0, 5, 0" Height="24" Text="Login" GotFocus="netUsernameBox_GotFocus" LostFocus="netUsernameBox_LostFocus"/>
+                    <PasswordBox x:Name="NetPasswordBox" Width="158" Height="24" Margin="5, 0, 0, 0" Password="Password" GotFocus="netPasswordBox_GotFocus" LostFocus="netPasswordBox_LostFocus"/>
+                </StackPanel>
             </StackPanel>
+            <Rectangle Width="20" DockPanel.Dock="Right"/>
+        </DockPanel>
+        <!--End of Search for Servers Section-->
 
-            <Button x:Name="SearchButton" Grid.Column="0" Grid.Row="5" HorizontalAlignment="Left" Content="Search" Width="65" Margin="20, 10, 0, 30" Click="SearchButton_Click" FontSize="13" />
-        </Grid>
-        <Border BorderThickness="1, 0, 0, 0" BorderBrush="#707070"  Grid.Row="0" Grid.Column="1">
+
+        <Border BorderThickness="1, 0, 0, 0" BorderBrush="#707070"  Grid.Row="0" Grid.Column="2">
             <Grid>
-
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
@@ -82,61 +69,57 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-
-                <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="5" Background="#414141" Foreground="White" FontSize="20" Height="30" Padding="20, 0, 0, 0">Connect</TextBlock>
-                <TextBlock Grid.Row="1" Grid.Column="0" FontWeight="DemiBold" FontSize="16" Padding="20, 10, 0, 0">SQL Authentication Method</TextBlock>
-
-                <TextBlock Grid.Row="1" Grid.Column="1" FontWeight="DemiBold" FontSize="16" Height="24" Margin="15, 10, 0, 0">SQL Instance</TextBlock>
-
-                <ComboBox x:Name="SqlServerInstance_ComboBox" Grid.Row="2" Grid.Column="1" Height="24" Width="160" Margin="18,10,0,0" SelectionChanged="SqlServerInstance_ComboBox_SelectionChanged"/>
-                <TextBlock x:Name="SelectBox" Grid.Row="2" Grid.Column="1" IsHitTestVisible="False" Visibility="Hidden" Text="Select a Server Instance" Margin="22,16,33,4"/>
-
-                <RadioButton x:Name="ServInt" Grid.Row="2" Grid.Column="0" Margin="20,14,0,0" IsChecked="True" Checked="ServRadioButton_Checked" Content="Windows authentication"/>
-                <RadioButton x:Name="ServDif" Grid.Row="3" Grid.Column="0" Margin="20,0,0,0" Checked="ServRadioButton_Checked" Content="Login and password"/>
-
-                <StackPanel x:Name="ServerCredentialPanel" Grid.Row="4" Grid.Column="0" Visibility="Collapsed" Margin="20, 30, 0, 0">
-                    <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
-                        <TextBox x:Name="ServerUsernameBox" Text="Username" Height="25" Width="175" Margin="26, 0, 0, 0" GotFocus="ServerUsernameBox_GotFocus" LostFocus="ServerUsernameBox_LostFocus"/>
+                <!--Begin of SQL connect section-->
+                <DockPanel Grid.Row="0" Grid.RowSpan="2" Grid.Column="0" Grid.ColumnSpan="2">
+                    <TextBlock DockPanel.Dock="Top" Background="#414141" Foreground="White" FontSize="20" Height="30" Padding="20, 0, 0, 0">SQL Connect</TextBlock>
+                    <!--Authentication Method Section-->
+                    <StackPanel DockPanel.Dock="Left" MinWidth="215">
+                        <TextBlock FontWeight="DemiBold" FontSize="16" Padding="20, 10, 0, 0" DockPanel.Dock="Left" >Authentication Method</TextBlock>
+                        <RadioButton x:Name="ServInt" Margin="20,10,0,0" IsChecked="True" Checked="ServRadioButton_Checked" Content="Windows authentication"/>
+                        <RadioButton x:Name="ServDif" Margin="20,5,0,0" Checked="ServRadioButton_Checked" Content="Login and password"/>
+                        <StackPanel x:Name="ServerCredentialPanel"  Visibility="Collapsed" Margin="20, 10, 0, 0" HorizontalAlignment="Center">
+                            <TextBox x:Name="ServerUsernameBox" Text="Username" Height="25" Width="175" Margin="15, 0, 0, 8" GotFocus="ServerUsernameBox_GotFocus" LostFocus="ServerUsernameBox_LostFocus"/>
+                            <PasswordBox x:Name="ServerPasswordBox" Width="175"  Height="25"  Margin="15, 0, 0, 0" Password="password" GotFocus="ServerPasswordBox_GotFocus" LostFocus="ServerPasswordBox_LostFocus"/>
+                        </StackPanel>
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0, 5, 0, 5">
-                        <PasswordBox x:Name="ServerPasswordBox" Width="175"  Height="25"  Margin="26, 0, 0, 0" Password="password" GotFocus="ServerPasswordBox_GotFocus" LostFocus="ServerPasswordBox_LostFocus"/>
-                    </StackPanel>
-                </StackPanel>
 
-                <TextBlock Grid.Row="1" Grid.Column="3" FontWeight="DemiBold" FontSize="16" Height="24"  Margin="15, 10, 0, 0">SQL Database</TextBlock>
-                <ComboBox x:Name="SqlServerDatabase_ComboBox" Height="24" Grid.Row="2" Grid.Column="3"  Margin="18, 10, 0, 0" Width="160" SelectionChanged="SqlServerDatabase_ComboBox_SelectionChanged" />
-                <TextBlock x:Name="DBSelectBox" IsHitTestVisible="False" Grid.Row="2" Grid.Column="3" Visibility="Hidden" Text="Select a Database" Margin="24,16,54,5"/>
-                <Button  Grid.Row="2" Grid.Column="4" Click="Run" Content="Run Quality Check" HorizontalAlignment="Left" Margin="15, 10, 15, 0" Width="127" FontSize="13" Height="25"/>
+                    <Button DockPanel.Dock="Right" Click="Run" Content="Run Quality Check" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="5, 42, 15, 0" Width="127" FontSize="13" Height="25"/>
+
+                    <StackPanel>
+                        <TextBlock FontWeight="DemiBold" FontSize="16" Height="24" Margin="0, 10, 0, 0" >Instance</TextBlock>
+                        <ComboBox x:Name="SqlServerInstance_ComboBox" Height="24" Width="180" Margin="0,10,0,0" SelectionChanged="SqlServerInstance_ComboBox_SelectionChanged"/>
+                    </StackPanel>
+
+                    <StackPanel>
+                        <TextBlock FontWeight="DemiBold" FontSize="16" Height="24"  Margin="10, 10, 0, 0">Database</TextBlock>
+                        <ComboBox x:Name="SqlServerDatabase_ComboBox" Height="24"   Margin="10, 10, 5, 0" Width="180" SelectionChanged="SqlServerDatabase_ComboBox_SelectionChanged" />
+                    </StackPanel>
+                </DockPanel>
+                <!--End of SQL connect section-->
+
+
 
                 <!--Search for... Section-->
                 <Border Grid.Row="0" Grid.RowSpan="4" Grid.Column="5" BorderThickness="1, 0, 0, 0" BorderBrush="#707070">
+
                     <StackPanel Orientation="Vertical">
                         <TextBlock  Background="#414141" Foreground="White" FontSize="20" Height="30" Padding="20, 0, 0, 0">Search for...</TextBlock>
 
                         <!--Tag Name Searchbox Section-->
-                        <TextBlock FontWeight="DemiBold" FontSize="12" Height="16" Margin="20, 5, 0, 3">Tag Name</TextBlock>
-                        <StackPanel Orientation="Horizontal" Margin="20, 0, 0, 2">
-                            <TextBox x:Name="TagSearchbox" Width="150"  HorizontalAlignment="Left" Height="24" Text="Tag Name" GotFocus="TagSearchbox_GotFocus" LostFocus="TagSearchbox_LostFocus"/>
-                            <Button x:Name="TagSearchButton" HorizontalAlignment="Left" Content="Search" Width="60" Margin="10, 0, 0, 1" Click="TagSearchButton_Click" FontSize="13" />
+                        <!--<TextBlock FontWeight="DemiBold" FontSize="12" Height="16" Margin="20, 5, 0, 3">Tag Name</TextBlock>-->
+                        <StackPanel Orientation="Horizontal" Margin="20, 15, 0, 2">
+                            <ComboBox x:Name="NameSearch_ComboBox" Height="24" Width="220">
+                                <ComboBoxItem Content="-- Search Type --" IsSelected="True"/>
+                                <ComboBoxItem Content="Tag Name"/>
+                                <ComboBoxItem Content="Point Name"/>
+                            </ComboBox>
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal"  Margin="20, 0, 5, 0">
+                        <TextBox x:Name="SearchBox" Width="220" HorizontalAlignment="Left" Margin="20, 5, 0, 3" Height="24" Text="Search Input" LostFocus="SearchBox_LostFocus" GotFocus="SearchBox_GotFocus"/>
+                        <StackPanel Orientation="Horizontal"  Margin="20, 0, 0, 0" >
                             <RadioButton x:Name="SearchExact"  Content="Exact" GroupName="SearchButtons" IsChecked="True"></RadioButton>
                             <RadioButton x:Name="SearchContains" Content="Contains" GroupName="SearchButtons" Margin="10, 0, 0, 10"></RadioButton>
                         </StackPanel>
-
-                        <!--Point Name Searchbox Section-->
-                        <Border BorderBrush="LightSlateGray" BorderThickness="0, 1, 0, 0" >
-                            <TextBlock FontWeight="DemiBold" FontSize="12" Height="16" Margin="20, 5, 0, 3">Point Name</TextBlock>
-                        </Border>
-                        <StackPanel Orientation="Horizontal"  Margin="20, 0, 0, 2">
-                                <TextBox x:Name="PointSearchbox" Width="150"  HorizontalAlignment="Left" Height="24" Text="Point Name" LostFocus="PointSearchbox_LostFocus" GotFocus="PointSearchbox_GotFocus"/>
-                                <Button x:Name="PointSearchButton" HorizontalAlignment="Left" Content="Search" Width="60" Margin="10, 0, 0, 1" Click="PointSearchButton_Click" FontSize="13" />
-                            </StackPanel>
-
-                        <StackPanel Orientation="Horizontal"  Margin="20, 0, 0, 10">
-                            <RadioButton x:Name="PointExact"  Content="Exact"  IsChecked="True"></RadioButton>
-                            <RadioButton x:Name="PointContains" Content="Contains"  Margin="10, 0, 0, 0"></RadioButton>
-                        </StackPanel>
+                        <Button x:Name="NameSearchButton" HorizontalAlignment="Left" Content="Search" Width="60" Margin="20, 0, 30, 10" FontSize="13" Click="NameSearchButton_Click" />
                     </StackPanel>
                 </Border>
 
@@ -144,27 +127,27 @@
             </Grid>
         </Border>
 
-        <Grid x:Name="Overlay" Grid.Row="1" Grid.Column="1" Panel.ZIndex="1000" Visibility="Collapsed" Margin="0, 26, 0, 0">
+        <Grid x:Name="Overlay" Grid.Row="1" Grid.Column="2" Panel.ZIndex="1000" Visibility="Collapsed" Margin="0, 26, 0, 0">
             <Grid.Background>
                 <SolidColorBrush Color="Black" Opacity=".4"/>
             </Grid.Background>
             <TextBlock x:Name="OverlayText" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Grid>
 
-        <DataGrid x:Name="Report" Grid.Row="1" Grid.Column="1" AutoGenerateColumns="False" Margin="0,0,0,0" VerticalAlignment="Stretch" HorizontalScrollBarVisibility="Auto"  CanUserAddRows="False" CellEditEnding="Report_CellEditEnding">
+        <DataGrid x:Name="Report" Grid.Row="1" Grid.Column="2" AutoGenerateColumns="False" Margin="0,0,0,0" VerticalAlignment="Stretch" HorizontalScrollBarVisibility="Auto"  CanUserAddRows="False" CellEditEnding="Report_CellEditEnding">
             <DataGrid.Columns>
                 <!--<DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="Auto" IsReadOnly="True"/>-->
                 <DataGridTextColumn Header="Area" Binding="{Binding Area}" Width="200" IsReadOnly="True"/>
-                <DataGridTextColumn x:Name="TagNameColumn" Header="Tag Name" Binding="{Binding TagName}" Width="225" IsReadOnly="False" />
+                <DataGridTextColumn x:Name="TagNameColumn" Header="Tag Name" Binding="{Binding TagName}" Width="225" IsReadOnly="True" />
                 <DataGridTextColumn x:Name="PointNameColumn" Header="Point Name" Binding="{Binding PointName}" Width="350" IsReadOnly="False"/>
                 <DataGridTextColumn Header="Point Status" Binding="{Binding PointStatus}" Width="100" IsReadOnly="True"/>
             </DataGrid.Columns>
         </DataGrid>
 
         <!--Notification Popup-->
-        <StackPanel x:Name="Notification" Background="#FFFFDF35" Grid.Row="1" Grid.Column="1" Height="20" VerticalAlignment="Top" Orientation="Horizontal" Visibility="Hidden">
+        <StackPanel x:Name="Notification" Background="#FFFFDF35" Grid.Row="1" Grid.Column="2" Height="20" VerticalAlignment="Top" Orientation="Horizontal" Visibility="Hidden">
             <Image Source="/Images/cancel.png" Height="8" Margin="4, 0, 4, 0" MouseDown="NotificationCancel"/>
-            <TextBlock Foreground="#FF323232" Margin="0, 1, 0, 0"> Changes have been made to one or more tags. Refresh Workbench to view changes. To view the changes in this window, click the <Italic>Run Quality Check</Italic> button.</TextBlock> 
+            <TextBlock Foreground="#FF323232" Margin="0, 1, 0, 0"> Changes have been made to one or more tags. Refresh Workbench to view changes. To view the changes in this window, click the <Italic>Run Quality Check</Italic> button.</TextBlock>
         </StackPanel>
         <!--End of Notification Popup-->
     </Grid>

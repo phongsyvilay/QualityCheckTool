@@ -6,6 +6,7 @@ using System.Data.SqlClient;
 using System.Windows;
 using Microsoft.Win32;
 using VioAlarmQualityCheckUtility.Models;
+using VioAlarmQualityCheckUtility.Properties;
 
 namespace VioAlarmQualityCheckUtility.Class
 {
@@ -55,8 +56,7 @@ namespace VioAlarmQualityCheckUtility.Class
 			{
 				if (key == null) return Enumerable.Empty<string>();
 
-				var value = key.GetValue(valueName) as string[];
-				if (value == null) return Enumerable.Empty<string>();
+				if (!(key.GetValue(valueName) is string[] value)) return Enumerable.Empty<string>();
 
 				for (int index = 0; index < value.Length; index++)
 				{
@@ -77,13 +77,12 @@ namespace VioAlarmQualityCheckUtility.Class
 
 		public List<string> GetRemoteInstances(string computerName, string username, string password)
 		{
-			RegistryKey envRegistryKey;
 			List<string> instances = new List<string>();
 
 			using (NetworkShareAccessor.Access(computerName, Environment.UserName, username, password))
 			{
 				RegistryView registryView = Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Registry32;
-				envRegistryKey = RegistryKey.OpenRemoteBaseKey(RegistryHive.LocalMachine, computerName, registryView);
+				var envRegistryKey = RegistryKey.OpenRemoteBaseKey(RegistryHive.LocalMachine, computerName, registryView);
 
 				RegistryKey temp = envRegistryKey.OpenSubKey(@"SOFTWARE\Microsoft\Microsoft SQL Server\Instance Names\SQL", false);
 				if (temp != null)
@@ -124,33 +123,32 @@ namespace VioAlarmQualityCheckUtility.Class
 		// ==============================================================================================================================================================
 		public static List<string> GetLocalSqlInstanceDatabases()
 		{
-			_sqlConn = new SqlConnection("Data Source=" + Properties.Settings.Default.SqlServerInstance + ";Integrated Security=True");
-			//List<string> databases = QueryDatabases(_sqlConn);
-			//return databases;
-			return QueryDatabases(_sqlConn);
+			Settings.Default.SqlConnectionString = "Data Source=" + Settings.Default.SqlServerInstance + ";Integrated Security=True";
+			_sqlConn = new SqlConnection(Settings.Default.SqlConnectionString);
+			return QueryDatabases();
 		}
 
 		public static List<string> GetSqlInstanceDatabases(string instance, string username, string password)
 		{
-			_sqlConn = new SqlConnection($"Data Source={instance}; User ID={username}; Password={password}");
-			//List<string> databases = QueryDatabases(_sqlConn);
-			//return databases;
-			return QueryDatabases(_sqlConn);
+			Settings.Default.SqlConnectionString = $"Data Source={instance}; User ID={username}; Password={password}";
+			_sqlConn = new SqlConnection(Settings.Default.SqlConnectionString);
+			return QueryDatabases();
 		}
 
-		public static List<string> QueryDatabases(SqlConnection sqlConn) 
+		public static List<string> QueryDatabases() 
 		{
 			List<string> databases = new List<string>();
+			databases.Add("-- Select a Database --");
 			SqlCommand cmd = new SqlCommand();
-			SqlDataReader reader;
+
 			try
 			{
 				cmd.CommandText = "SELECT name FROM sys.databases;";
 				cmd.CommandType = CommandType.Text;
-				cmd.Connection = sqlConn;
+				cmd.Connection = _sqlConn;
 				cmd.Connection.Open();
 
-				reader = cmd.ExecuteReader();
+				var reader = cmd.ExecuteReader();
 
 				while (reader.Read())
 				{
@@ -175,86 +173,65 @@ namespace VioAlarmQualityCheckUtility.Class
 		// Functions: GetAlarmSources, GetRemoteAlarmSources, and QueryAwxSources         
 		// Description: These are all related to opening up a SQL connection to either a remote server or local SQL instance and querying the SQL DB for the sources.
 		// ==============================================================================================================================================================
-		public List<AwxSource> GetAlarmSources()
-		{
-			//_sqlConn = new SqlConnection("Data Source=" + Properties.Settings.Default.SqlServerInstance + ";Integrated Security=True");
-			//List<AwxSource> data = QueryAwxSources(_sqlConn);
-			//return data;
-			return QueryAwxSources(_sqlConn);
-		}
 
-		public List<AwxSource> GetRemoteAlarmSources(string instance, string username, string password)
-		{
-			//_sqlConn = new SqlConnection($@"Data Source={instance}; User ID={username}; Password={password}");
-			//List<AwxSource> data = QueryAwxSources(_sqlConn);
-			//return data;
-			return QueryAwxSources(_sqlConn);
-		}
-
-		public static List<AwxSource> QueryAwxSources(SqlConnection sqlConn)
+		public List<AwxSource> QueryAwxSources()
 		{
 			SqlCommand cmd = new SqlCommand();
 			List<AwxSource> data = new List<AwxSource>();
 
-			try
-			{
-				cmd.CommandText = "SELECT Name, Input1, SourceID FROM " + Properties.Settings.Default.SqlServerDatabase + ".dbo.AWX_Source;";
-				cmd.CommandType = CommandType.Text;
-				cmd.Connection = sqlConn;
-				cmd.Connection.Open();
-				var reader = cmd.ExecuteReader();
+			cmd.CommandText = "SELECT Name, Input1, SourceID FROM " + Settings.Default.SqlServerDatabase + ".dbo.AWX_Source;";
+			cmd.CommandType = CommandType.Text;
+			cmd.Connection = _sqlConn;
+			cmd.Connection.Open();
+		
+			var reader = cmd.ExecuteReader();
 
-				while (reader.Read())
+			while (reader.Read())
+			{
+				var awxSource = new AwxSource
 				{
-					var awxSource = new AwxSource
-					{
-						Name = reader[0].ToString(),
-						Input1 = reader[1].ToString(),
-						ID = (int)reader[2]
-					};
+					Name = reader[0].ToString(),
+					Input1 = reader[1].ToString(),
+					ID = (int)reader[2]
+				};
 
-					data.Add(awxSource);
-				}
-
-				reader.Close();
-
-				cmd.Connection.Close();
+				data.Add(awxSource);
 			}
-			catch (Exception e)
-			{
-				throw e;
-			}
+
+			reader.Close();
+
+			cmd.Connection.Close();
 
 			return data;
 		}
 
-		public void UpdateAwxSourceTagName(ReportModel sourceToUpdate, string newName)
-		{
-			SqlCommand cmd = new SqlCommand();
+		//public void UpdateAwxSourceTagName(ReportModel sourceToUpdate, string newName)
+		//{
+		//	SqlCommand cmd = new SqlCommand();
 
-			try
-			{
-				cmd.Connection = _sqlConn;
-				cmd.Connection.Open();
-				cmd.CommandText =
-					$"UPDATE {Properties.Settings.Default.SqlServerDatabase}.dbo.AWX_Source SET Name = '{newName}' WHERE SourceID = {sourceToUpdate.SourceID}";
+		//	try
+		//	{
+		//		cmd.Connection = SqlConn;
+		//		cmd.Connection.Open();
+		//		cmd.CommandText =
+		//			$"UPDATE {Settings.Default.SqlServerDatabase}.dbo.AWX_Source SET Name = '{newName}' WHERE SourceID = {sourceToUpdate.SourceID}";
 
-				cmd.CommandType = CommandType.Text;
-				cmd.ExecuteNonQuery();
-				cmd.Connection.Close();
+		//		cmd.CommandType = CommandType.Text;
+		//		cmd.ExecuteNonQuery();
+		//		cmd.Connection.Close();
 
-			}
-			catch (SqlException)
-			{
-				MessageBox.Show("Unable to update tag name.");
-				cmd.Connection.Close();
-			}
-			catch (Exception e)
-			{
-				MessageBox.Show("Unable to update tag name.");
-				cmd.Connection.Close();
-			}
-		}
+		//	}
+		//	catch (SqlException)
+		//	{
+		//		MessageBox.Show("Unable to update tag name.");
+		//		cmd.Connection.Close();
+		//	}
+		//	catch (Exception)
+		//	{
+		//		MessageBox.Show("Unable to update tag name.");
+		//		cmd.Connection.Close();
+		//	}
+		//}
 
 		public void UpdateAwxSourcePointName(ReportModel sourceToUpdate, string newName)
 		{
@@ -265,7 +242,7 @@ namespace VioAlarmQualityCheckUtility.Class
 				cmd.Connection = _sqlConn;
 				cmd.Connection.Open();
 				cmd.CommandText =
-					$"UPDATE {Properties.Settings.Default.SqlServerDatabase}.dbo.AWX_Source SET Input1 = '{newName}' WHERE SourceID = {sourceToUpdate.SourceID}";
+					$"UPDATE {Settings.Default.SqlServerDatabase}.dbo.AWX_Source SET Input1 = '{newName}' WHERE SourceID = {sourceToUpdate.SourceID}";
 
 				cmd.CommandType = CommandType.Text;
 				cmd.ExecuteNonQuery();
@@ -277,7 +254,7 @@ namespace VioAlarmQualityCheckUtility.Class
 				MessageBox.Show("Unable to update point name.");
 				cmd.Connection.Close();
 			}
-			catch (Exception e)
+			catch (Exception)
 			{
 				MessageBox.Show("Unable to update point name");
 				cmd.Connection.Close();
