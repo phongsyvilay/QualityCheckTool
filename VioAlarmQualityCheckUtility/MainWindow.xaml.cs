@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using VioAlarmQualityCheckUtility.Class;
 using VioAlarmQualityCheckUtility.Models;
 using VioAlarmQualityCheckUtility.Properties;
@@ -25,11 +26,57 @@ namespace VioAlarmQualityCheckUtility
 		private string _serverPassword = "";
 		private string _serverUsername = "";
 
+		const int WM_SIZING = 0x214;
+		const int WM_EXITSIZEMOVE = 0x232;
+		private static bool _windowWasResized = false;
+
 		/** Main Window **/
 		public MainWindow()
 		{
 			InitializeComponent();
+			this.Loaded += MainWindow_Loaded;
+		}
 
+		private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+		{
+			HwndSource source = HwndSource.FromHwnd(new WindowInteropHelper(this).Handle);
+			source.AddHook(WndProc);
+		}
+
+		private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wparam, IntPtr lparam, ref bool handled)
+		{
+			if (msg == WM_SIZING)
+			{
+				//indicate the the user is resizing and not moving the window
+				if (_windowWasResized == false)
+					_windowWasResized = true;
+			}
+
+			if (msg == WM_EXITSIZEMOVE)
+			{
+				// 'check that this is the end of resize and not move operation          
+				if (_windowWasResized == true)
+				{
+
+					if (this.ActualWidth < 1050)
+					{
+						SearchForSection.SetValue(Grid.RowProperty, 1);
+						SearchForSection.SetValue(Grid.ColumnProperty, 0);
+						SearchForSection.BorderThickness = new Thickness(0, 1, 0, 0);
+					}
+
+					else
+					{
+						SearchForSection.SetValue(Grid.RowProperty, 0);
+						SearchForSection.SetValue(Grid.ColumnProperty, 3);
+					}
+
+					// 'set it back to false for the next resize/move
+					_windowWasResized = false;
+				}
+			}
+
+			return IntPtr.Zero;
 		}
 
 		/************************************************************************
@@ -573,7 +620,7 @@ namespace VioAlarmQualityCheckUtility
 		 **/
 		private void NotificationCancel(object sender, System.Windows.Input.MouseButtonEventArgs e)
 		{
-			Notification.Visibility = Visibility.Hidden;
+			Notification.Visibility = Visibility.Collapsed;
 			Report.Margin = new Thickness(0, 0, 0, 0);
 		}
 
@@ -584,7 +631,7 @@ namespace VioAlarmQualityCheckUtility
 		private void Notification_Popup()
 		{
 			Notification.Visibility = Visibility.Visible;
-			Report.Margin = new Thickness(0, 20, 0, 0);
+			//Report.Margin = new Thickness(0, 20, 0, 0);
 		}
 
 		

@@ -152,5 +152,20 @@
         <Style TargetType="{x:Type TreeViewItem}">
             <Setter Property="Padding" Value="1"/>
         </Style>
+
+        <DataTemplate x:Key="titleText">
+            <Border Background="#414141" Height="30">
+                <TextBlock Text="{Binding}" 
+                           VerticalAlignment="Center"
+                           FontSize="20"
+                           Foreground="White"
+                           Width="{Binding RelativeSource={RelativeSource Mode=FindAncestor, AncestorType={x:Type Expander}}, Path=ActualWidth}"
+                           Padding="10, 0, 0, 0"/>
+            </Border>
+        </DataTemplate>
+
+        <Style TargetType="{x:Type Expander}">
+            <Setter Property="HeaderTemplate" Value="{StaticResource titleText}"/>
+        </Style>
     </Application.Resources>
 </Application>
