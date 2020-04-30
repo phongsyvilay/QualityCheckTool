@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="VIO Tag Quality Check" Height="600" Width="1165">
+        Title="VIO Tag Quality Check" Height="600" Width="1250">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -53,28 +53,31 @@
             <DockPanel >
                 <TextBlock DockPanel.Dock="Top" Background="#414141" Foreground="White" FontSize="20" Height="30" Padding="20, 0, 0, 0">SQL Connect</TextBlock>
                 <!--Begin of SQL connect section-->
-                    <!--Authentication Method Section-->
-                    <Rectangle DockPanel.Dock="Right" Width="10"/>
-                    <StackPanel MinWidth="215" >
-                        <TextBlock FontWeight="DemiBold" FontSize="16" Padding="20, 10, 0, 0" DockPanel.Dock="Left" >Authentication Method</TextBlock>
-                        <RadioButton x:Name="ServInt" Margin="20,10,0,0" IsChecked="True" Checked="ServRadioButton_Checked" Content="Windows authentication"/>
-                        <RadioButton x:Name="ServDif" Margin="20,5,0,0" Checked="ServRadioButton_Checked" Content="Login and password"/>
-                        <StackPanel x:Name="ServerCredentialPanel"  Visibility="Collapsed" Margin="20, 10, 0, 0" HorizontalAlignment="Center">
-                            <TextBox x:Name="ServerUsernameBox" Text="Username" Height="25" Width="175" Margin="15, 0, 0, 8" GotFocus="ServerUsernameBox_GotFocus" LostFocus="ServerUsernameBox_LostFocus"/>
-                            <PasswordBox x:Name="ServerPasswordBox" Width="175"  Height="25"  Margin="15, 0, 0, 10" Password="password" GotFocus="ServerPasswordBox_GotFocus" LostFocus="ServerPasswordBox_LostFocus"/>
-                        </StackPanel>
+                <!--Authentication Method Section-->
+                <Rectangle DockPanel.Dock="Right" Width="10"/>
+                <StackPanel MinWidth="215" >
+                    <TextBlock FontWeight="DemiBold" FontSize="16" Padding="20, 10, 0, 0" DockPanel.Dock="Left" >Authentication Method</TextBlock>
+                    <RadioButton x:Name="ServInt" Margin="20,10,0,0" IsChecked="True" Checked="ServRadioButton_Checked" Content="Windows authentication"/>
+                    <RadioButton x:Name="ServDif" Margin="20,5,0,0" Checked="ServRadioButton_Checked" Content="Login and password"/>
+                    <StackPanel x:Name="ServerCredentialPanel"  Visibility="Collapsed" Margin="20, 10, 0, 0" HorizontalAlignment="Center">
+                        <TextBox x:Name="ServerUsernameBox" Text="Username" Height="25" Width="175" Margin="15, 0, 0, 8" GotFocus="ServerUsernameBox_GotFocus" LostFocus="ServerUsernameBox_LostFocus"/>
+                        <PasswordBox x:Name="ServerPasswordBox" Width="175"  Height="25"  Margin="15, 0, 0, 10" Password="password" GotFocus="ServerPasswordBox_GotFocus" LostFocus="ServerPasswordBox_LostFocus"/>
                     </StackPanel>
+                </StackPanel>
+                <StackPanel DockPanel.Dock="Bottom">
+                    <Button Content="Run Full Quality Check" HorizontalAlignment="Right" Width="180"  FontSize="13" Height="25" Click="Run"/>
+                    <Button x:Name="RerunButton" Visibility="Hidden" HorizontalAlignment="Right" Content="Run Check for Tags Displayed" Width="190" Margin="0, 5, 0, 5" FontSize="13" Click="RerunButton_Click" />
+                </StackPanel>
 
-                    <Button DockPanel.Dock="Bottom" Click="Run" Content="Run Quality Check" HorizontalAlignment="Right"  Margin="0, 10, 5, 10" Width="180" FontSize="13" Height="25"/>
-                    <StackPanel>
-                        <TextBlock FontWeight="DemiBold" FontSize="16" Height="24" Margin="0, 10, 0, 0" >Instance</TextBlock>
-                        <ComboBox x:Name="SqlServerInstance_ComboBox" Height="24" Width="180" Margin="0,10,0,0" SelectionChanged="SqlServerInstance_ComboBox_SelectionChanged"/>
-                    </StackPanel>
+                <StackPanel>
+                    <TextBlock FontWeight="DemiBold" FontSize="16" Height="24" Margin="0, 10, 0, 0" >Instance</TextBlock>
+                    <ComboBox x:Name="SqlServerInstance_ComboBox" Height="24" Width="180" Margin="0,10,0,0" SelectionChanged="SqlServerInstance_ComboBox_SelectionChanged"/>
+                </StackPanel>
 
-                    <StackPanel>
-                        <TextBlock FontWeight="DemiBold" FontSize="16" Height="24"  Margin="10, 10, 0, 0">Database</TextBlock>
-                        <ComboBox x:Name="SqlServerDatabase_ComboBox" Height="24"   Margin="10, 10, 5, 0" Width="180" SelectionChanged="SqlServerDatabase_ComboBox_SelectionChanged" />
-                    </StackPanel>
+                <StackPanel>
+                    <TextBlock FontWeight="DemiBold" FontSize="16" Height="24"  Margin="10, 10, 0, 0">Database</TextBlock>
+                    <ComboBox x:Name="SqlServerDatabase_ComboBox" Height="24"   Margin="10, 10, 5, 0" Width="180" SelectionChanged="SqlServerDatabase_ComboBox_SelectionChanged" />
+                </StackPanel>
             </DockPanel>
             <!--End of SQL connect section-->
         </Border>
@@ -100,35 +103,36 @@
                         <RadioButton x:Name="SearchContains" Content="Contains" GroupName="SearchButtons" Margin="10, 0, 0, 10"></RadioButton>
                     </StackPanel>
                     <Button x:Name="NameSearchButton" HorizontalAlignment="Left" Content="Search" Width="60" Margin="20, 0, 30, 10" FontSize="13" Click="NameSearchButton_Click" />
+
                 </StackPanel>
             </Expander>
         </Border>
         <!--End of Search for... section-->
 
 
-        <Grid x:Name="Overlay" Panel.ZIndex="1000" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Visibility="Collapsed" Margin="0, 26, 0, 0">
+        <Grid x:Name="Overlay" Panel.ZIndex="1000" Grid.Row="1" Grid.RowSpan="2" Grid.Column="1" Grid.ColumnSpan="3" Visibility="Collapsed" Margin="0, 26, 0, 0">
             <Grid.Background>
                 <SolidColorBrush Color="Black" Opacity=".4"/>
             </Grid.Background>
             <TextBlock x:Name="OverlayText" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Grid>
 
-        <!--Notification Popup-->
-        <StackPanel x:Name="Notification" Background="#FFFFDF35" DockPanel.Dock="Top" Height="20" VerticalAlignment="Top" Orientation="Horizontal" Visibility="Collapsed"  Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2">
-            <Image Source="/Images/cancel.png" Height="8" Margin="4, 0, 4, 0" MouseDown="NotificationCancel"/>
-            <TextBlock Foreground="#FF323232" Margin="0, 1, 0, 0"> Changes have been made to one or more tags. Refresh Workbench to view changes. To view the changes in this window, click the <Italic>Run Quality Check</Italic> button.</TextBlock>
-        </StackPanel>
-        <!--End of Notification Popup-->
-
-        <DataGrid x:Name="Report" AutoGenerateColumns="False" HorizontalScrollBarVisibility="Auto" CanUserAddRows="False" CellEditEnding="Report_CellEditEnding" Grid.Row="1" Grid.RowSpan="2" Grid.Column="1" Grid.ColumnSpan="3">
+        <DataGrid x:Name="Report" AutoGenerateColumns="False" HorizontalScrollBarVisibility="Auto" CanUserAddRows="False" CellEditEnding="Report_CellEditEnding"  Grid.Row="1" Grid.RowSpan="2" Grid.Column="1" Grid.ColumnSpan="3">
             <DataGrid.Columns>
-                <!--<DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="Auto" IsReadOnly="True"/>-->
+                <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="Auto" IsReadOnly="True"/>
                 <DataGridTextColumn Header="Area" Binding="{Binding Area}" Width="200" IsReadOnly="True"/>
                 <DataGridTextColumn x:Name="TagNameColumn" Header="Tag Name" Binding="{Binding TagName}" Width="225" IsReadOnly="True" />
                 <DataGridTextColumn x:Name="PointNameColumn" Header="Point Name" Binding="{Binding PointName}" Width="350" IsReadOnly="False"/>
                 <DataGridTextColumn Header="Point Status" Binding="{Binding PointStatus}" Width="100" IsReadOnly="True"/>
             </DataGrid.Columns>
         </DataGrid>
+
+        <!--Notification Popup-->
+        <StackPanel x:Name="Notification" Background="#FFFFDF35" DockPanel.Dock="Top" Height="20" VerticalAlignment="Top" Orientation="Horizontal" Visibility="Collapsed"  Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3">
+            <Image Source="/Images/cancel.png" Height="8" Margin="4, 0, 4, 0" MouseDown="NotificationCancel"/>
+            <TextBlock Foreground="#FF323232" Margin="0, 1, 0, 0"> Changes have been made to one or more tags. Refresh Workbench to view changes. To view the changes in this tool, click one of the <Italic>Quality Check</Italic> buttons.</TextBlock>
+        </StackPanel>
+        <!--End of Notification Popup-->
 
         <GridSplitter Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" Width="5"/>
     </Grid>

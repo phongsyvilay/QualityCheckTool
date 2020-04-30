@@ -16,8 +16,9 @@ namespace VioAlarmQualityCheckUtility
 	///
 	public partial class MainWindow
 	{
+		private readonly QualityCheck _qualityCheck = new QualityCheck();
 		private readonly SqlServer _sqlServer = new SqlServer();
-		private List<ReportModel> _allReports = new List<ReportModel>();
+		public List<ReportModel> allReports = new List<ReportModel>();
 		private List<ReportModel> _foundReports = new List<ReportModel>();
 
 		private string _netPassword = "";
@@ -26,9 +27,9 @@ namespace VioAlarmQualityCheckUtility
 		private string _serverPassword = "";
 		private string _serverUsername = "";
 
-		const int WM_SIZING = 0x214;
-		const int WM_EXITSIZEMOVE = 0x232;
-		private static bool _windowWasResized = false;
+		private const int WmSizing = 0x214;
+		const int WmExitsizemove = 0x232;
+		private static bool _windowWasResized;
 
 		/** Main Window **/
 		public MainWindow()
@@ -37,43 +38,44 @@ namespace VioAlarmQualityCheckUtility
 			this.Loaded += MainWindow_Loaded;
 		}
 
+
+		/************************************************************************
+		 * Window Responsive Functions
+		 ************************************************************************/
 		private void MainWindow_Loaded(object sender, RoutedEventArgs e)
 		{
 			HwndSource source = HwndSource.FromHwnd(new WindowInteropHelper(this).Handle);
-			source.AddHook(WndProc);
+			source?.AddHook(WndProc);
 		}
 
 		private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wparam, IntPtr lparam, ref bool handled)
 		{
-			if (msg == WM_SIZING)
+			if (msg == WmSizing)
 			{
 				//indicate the the user is resizing and not moving the window
 				if (_windowWasResized == false)
 					_windowWasResized = true;
 			}
 
-			if (msg == WM_EXITSIZEMOVE)
+			if (msg == WmExitsizemove && _windowWasResized)
 			{
 				// 'check that this is the end of resize and not move operation          
-				if (_windowWasResized == true)
+
+				if (this.ActualWidth < 1050)
 				{
-
-					if (this.ActualWidth < 1050)
-					{
-						SearchForSection.SetValue(Grid.RowProperty, 1);
-						SearchForSection.SetValue(Grid.ColumnProperty, 0);
-						SearchForSection.BorderThickness = new Thickness(0, 1, 0, 0);
-					}
-
-					else
-					{
-						SearchForSection.SetValue(Grid.RowProperty, 0);
-						SearchForSection.SetValue(Grid.ColumnProperty, 3);
-					}
-
-					// 'set it back to false for the next resize/move
-					_windowWasResized = false;
+					SearchForSection.SetValue(Grid.RowProperty, 1);
+					SearchForSection.SetValue(Grid.ColumnProperty, 0);
+					SearchForSection.BorderThickness = new Thickness(0, 1, 0, 0);
 				}
+
+				else
+				{
+					SearchForSection.SetValue(Grid.RowProperty, 0);
+					SearchForSection.SetValue(Grid.ColumnProperty, 3);
+				}
+
+				// 'set it back to false for the next resize/move
+				_windowWasResized = false;
 			}
 
 			return IntPtr.Zero;
@@ -110,7 +112,7 @@ namespace VioAlarmQualityCheckUtility
 			{
 				foreach (var source in area.SourcesList)
 				{
-					var found = _allReports.FindAll(s => s.TagName == source.Name && s.Area == source.AreaName);
+					var found = allReports.FindAll(s => s.TagName == source.Name && s.Area == source.AreaName);
 					_foundReports.AddRange(found);
 				}
 
@@ -119,7 +121,7 @@ namespace VioAlarmQualityCheckUtility
 					if (child.SourcesList.Count != 0)
 						foreach (var awxSource in child.SourcesList)
 						{
-							var found = _allReports.FindAll(s =>
+							var found = allReports.FindAll(s =>
 								s.TagName == awxSource.Name && s.Area == awxSource.AreaName);
 							_foundReports.AddRange(found);
 						}
@@ -200,27 +202,23 @@ namespace VioAlarmQualityCheckUtility
 
 		public void Run(object sender, RoutedEventArgs e)
 		{
-
-			QualityCheck qualityCheck = new QualityCheck();
-
+			//MessageBox.Show("Change 9");
 			try
 			{
+				allReports.Clear();
 				var ash = new AreaSourceHandler();
 				var sources = _sqlServer.QueryAwxSources();
 				var allAreas = ash.GetAreas(sources);
-
 				AreaTreeView.ItemsSource = allAreas.FindAll(i => i.RecursiveParentId == 0);
-				Report.ItemsSource = _allReports = qualityCheck.CheckAll(allAreas[0].SourcesList);
-
+				Report.ItemsSource = allReports = _qualityCheck.CheckAll(allAreas[0].SourcesList);
+				RerunButton.Visibility = Visibility.Visible;
 
 			}
-			catch (Exception ex)
+			catch (Exception)
 			{
-				//MessageBox.Show(ex.ToString());
 				MessageBox.Show("Could not run quality check.");
 
 			}
-
 		}
 
 		/** Button that is searching for tag or point that is exactly the input or
@@ -247,6 +245,26 @@ namespace VioAlarmQualityCheckUtility
 						PointSearch(SearchBox.Text, "contains");
 				}
 			}
+		}
+		private void RerunButton_Click(object sender, RoutedEventArgs e)
+		{
+			var listOnDisplay = ((List<ReportModel>) Report.ItemsSource).Select(r => r.SourceID).Distinct().ToList();
+			//_qualityCheck.CheckSome((List<ReportModel>) Report.ItemsSource);
+
+			allReports.Clear();
+			var ash = new AreaSourceHandler();
+			var sources = _sqlServer.QueryAwxSources();
+			var allAreas = ash.GetAreas(sources);
+			AreaTreeView.ItemsSource = allAreas.FindAll(i => i.RecursiveParentId == 0);
+			allReports = _qualityCheck.CheckAll(allAreas[0].SourcesList);
+			_foundReports.Clear();
+
+			foreach (var report in listOnDisplay)
+			{
+				_foundReports.AddRange(allReports.FindAll(r => r.SourceID == report));
+			}
+
+			Report.ItemsSource = _foundReports;
 		}
 
 
@@ -309,10 +327,10 @@ namespace VioAlarmQualityCheckUtility
 
 			if (searchType == "contains")
 			{
-				foundReports = _allReports.FindAll(r => r.TagName.Contains(tag));
+				foundReports = allReports.FindAll(r => r.TagName.Contains(tag));
 			}
 			else if (searchType == "exact")
-				foundReports = _allReports.FindAll(r => r.TagName == tag);
+				foundReports = allReports.FindAll(r => r.TagName == tag);
 
 
 			if (foundReports.Count == 0)
@@ -325,7 +343,7 @@ namespace VioAlarmQualityCheckUtility
 			else
 			{
 				Overlay.Visibility = Visibility.Collapsed;
-				Report.ItemsSource = foundReports;
+				Report.ItemsSource = _foundReports = foundReports;
 			}
 
 			Report.Items.Refresh();
@@ -338,10 +356,10 @@ namespace VioAlarmQualityCheckUtility
 
 			if (searchType == "contains")
 			{
-				foundReports = _allReports.FindAll(r => r.PointName.Contains(pointName));
+				foundReports = allReports.FindAll(r => r.PointName.Contains(pointName));
 			}
 			else if (searchType == "exact")
-				foundReports = _allReports.FindAll(r => r.PointName == pointName);
+				foundReports = allReports.FindAll(r => r.PointName == pointName);
 
 
 			if (foundReports.Count == 0)
@@ -353,7 +371,7 @@ namespace VioAlarmQualityCheckUtility
 			else
 			{
 				Overlay.Visibility = Visibility.Collapsed;
-				Report.ItemsSource = foundReports;
+				Report.ItemsSource = _foundReports = foundReports;
 			}
 
 			Report.Items.Refresh();
@@ -440,7 +458,7 @@ namespace VioAlarmQualityCheckUtility
 			if (area.Name == "All Tags")
 			{
 				Overlay.Visibility = Visibility.Collapsed;
-				Report.ItemsSource = _allReports;
+				Report.ItemsSource = allReports;
 			}
 			else
 			{
@@ -560,14 +578,7 @@ namespace VioAlarmQualityCheckUtility
 
 		private void SearchBox_LostFocus(object sender, RoutedEventArgs e)
 		{
-			if (SearchBox.Text == "")
-			{
-				SearchBox.Text = "Search Input";
-			}
-			else
-			{
-				SearchBox.Text = SearchBox.Text.Trim();
-			}
+			SearchBox.Text = SearchBox.Text == "" ? "Search Input" : SearchBox.Text.Trim();
 		}
 
 		private void SearchBox_GotFocus(object sender, RoutedEventArgs e)
@@ -588,30 +599,13 @@ namespace VioAlarmQualityCheckUtility
 		{
 			string editedText = ((TextBox)e.EditingElement).Text;
 			ReportModel rm = (ReportModel)e.Row.Item;
+			if (editedText == rm.PointName) return;
+			ReportModel original = allReports.Find(r => r.SourceID == rm.SourceID);
+			string newEditedText = original.PointName.Replace(rm.PointName, editedText);
+			original.PointName = newEditedText;
 
-			// Goes into this statement for tag name 
-			//if (((DataGrid)sender).CurrentColumn?.Header.ToString() == "Tag Name" && e.Column.Header.ToString() == "Tag Name")
-			//{
-			//	if (editedText != rm.TagName)
-			//	{
-
-			//		_sqlServer.UpdateAwxSourceTagName(rm, editedText);
-			//		Notification_Popup();
-			//	}
-			//}
-
-			//// Goes into this statement for point name 
-			//if (((DataGrid)sender).CurrentColumn?.Header.ToString() == "Point Name" && e.Column.Header.ToString() == "Point Name")
-			//{
-				if (editedText != rm.PointName)
-				{
-					ReportModel original = _allReports.Find(r => r.SourceID == rm.SourceID);
-					string newEditedText = original.PointName.Replace(rm.PointName, editedText);
-
-					_sqlServer.UpdateAwxSourcePointName(rm, newEditedText);
-					Notification_Popup();
-				}
-			//}
+			_sqlServer.UpdateAwxSourcePointName(rm, newEditedText);
+			Notification_Popup();
 		}
 
 
@@ -631,7 +625,6 @@ namespace VioAlarmQualityCheckUtility
 		private void Notification_Popup()
 		{
 			Notification.Visibility = Visibility.Visible;
-			//Report.Margin = new Thickness(0, 20, 0, 0);
 		}
 
 		

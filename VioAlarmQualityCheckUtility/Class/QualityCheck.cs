@@ -15,6 +15,11 @@ namespace VioAlarmQualityCheckUtility.Class
 		private readonly FwxClientWrapper _fwxClientWrapper = new FwxClientWrapper();
 		private ReadDoneDelegate _readDoneDelegate;
 
+		public class ReportState
+		{
+			public int Id { get; set; }
+			public string Input { get; set; }
+		}
 
 		// Check All
 		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -48,7 +53,7 @@ namespace VioAlarmQualityCheckUtility.Class
 				foreach (AwxSource item in awxSourceList)
 					if (item.Input1.Contains("@"))
 					{
-						string pattern = @"[(){}|&!]|(==\s+\d*)";
+						const string pattern = @"[(){}|&!]|(==\s+\d*)";
 
 						if (item.Input1.Contains("x="))
 						{
@@ -74,20 +79,20 @@ namespace VioAlarmQualityCheckUtility.Class
 						points = points.Skip(1).ToArray();
 
 
-						for (var i = 0; i < points.Length ; i++)
+						for (var i = 0; i < points.Length; i++)
 						{
 							var newWord = "@" + Regex.Replace(points[i], pattern, "").Trim();
-								var reportModel = new ReportModel
-								{
-									ID = id,
-									Type = "Alarm",
-									Area = item.AreaName,
-									TagName = item.Name,
-									PointName = newWord,
-									PointStatus = "Updating...",
-									SourceID = item.ID,
-									MultipleInputs = false
-								};
+							var reportModel = new ReportModel
+							{
+								ID = id,
+								Type = "Alarm",
+								Area = item.AreaName,
+								TagName = item.Name,
+								PointName = newWord,
+								PointStatus = "Updating...",
+								SourceID = item.ID,
+								MultipleInputs = false
+							};
 
 							report.Add(reportModel);
 							id++;
@@ -115,7 +120,7 @@ namespace VioAlarmQualityCheckUtility.Class
 		{
 			try
 			{
-				var sampleValue = _fwxClientWrapper.Read(@"@RSLinx OPC Server\[CC004]U100005.UNIT_EN.Value");
+				var sampleValue = _fwxClientWrapper.Read(@"@RSLinx OPC Server\[CC100]U502500.AUX.Value");
 				return sampleValue.Status.ToString() != "Bad - User Access Denied";
 			}
 			catch (Exception e)
@@ -132,34 +137,31 @@ namespace VioAlarmQualityCheckUtility.Class
 		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		private void ReadDoneCallBack(ReadDoneResult result)
 		{
-			var data = (List<ReportModel>)((MainWindow)Application.Current.MainWindow)?.Report.ItemsSource;
+			var data = ((MainWindow)Application.Current.MainWindow)?.allReports;
 
 			if (data != null)
 				foreach (var item in data)
 				{
-					if (item.ID == ((ReportState) result.UserState).Id)
+					if (item.MultipleInputs && item.PointStatus.Contains(((ReportState)result.UserState).Input))
 					{
-						item.PointStatus = result.Value.Status.IsBad ? "Bad" : result.Value.Status.ToString();
-					}
-					else if (item.MultipleInputs && item.PointStatus.Contains(((ReportState) result.UserState).Input))
-					{
-						if (result.Value.Status.IsBad)
-						{
-							item.PointStatus = "Bad";
-						}
-						else
-						{
-							item.PointStatus = item.PointStatus.Replace(((ReportState)result.UserState).Input, result.Value.Status.ToString());
-						}
+
+						item.PointStatus = item.PointStatus.Replace(((ReportState)result.UserState).Input, result.Value.Status.ToString());
+
 					}
 					else if (item.MultipleInputs && !item.PointStatus.Contains("@"))
 					{
 						item.PointStatus = item.PointStatus.Contains("Bad") ? "Bad" : "Good";
 
 					}
+					else if (item.ID == ((ReportState)result.UserState).Id)
+					{
+						item.PointStatus = result.Value.Status.IsBad ? "Bad" : result.Value.Status.ToString();
+						if (item.ID == 3310)
+						{
+							MessageBox.Show("1!!!! \nID: " + item.ID + ". \nPointname: " + item.PointName + ". \nStatus: " + result.Value.Status + ".");
+						}
+					}
 				}
-
-				//((MainWindow)Application.Current.MainWindow)?.Report.Items.Refresh();
 		}
 
 		// Read Point Async
@@ -169,14 +171,9 @@ namespace VioAlarmQualityCheckUtility.Class
 		public void ReadPointAsync(string pointName, ReportState state)
 		{
 			_fwxClientWrapper.ReadAsync(pointName, _readDoneDelegate, state);
-			
+
 		}
 
-		public class ReportState
-		{
-			public int Id { get; set; }
-			public string Input { get; set; }
-		}
 
 		// Asset Equipment Properties
 		//ascEquipmentPropertyList = SqlServer.GetAssetEquipmentProperties();
