@@ -90,28 +90,33 @@ namespace VioAlarmQualityCheckUtility.Class
 							command.Parameters.AddWithValue("@SrcID", source.ID);
 							SqlDataReader reader = command.ExecuteReader();
 
-							AwxSource newSource = new AwxSource
-							{
-								AreaName = "",
-								ID = source.ID,
-								Input1 = source.Input1,
-								Name = source.Name
-							};
-
 							if (!reader.HasRows)
 							{
-								newSource.AreaName = "Unassigned Tags";
+								AwxSource newSource = new AwxSource
+								{
+									AreaName = "Unassigned Tags",
+									ID = source.ID,
+									Input1 = source.Input1,
+									Name = source.Name
+								};
 
 								//Adding to unassigned tags area
 								areas[0].SourcesList.Add(newSource);
 								areas[1].SourcesList.Add(newSource);
 							}
-
-							if (reader.HasRows)
+							else
 							{
 								while (reader.Read())
 								{
 									var area = areas.Find(a => a.Id == (int) reader[1]);
+
+									AwxSource newSource = new AwxSource
+									{
+										AreaName = "",
+										ID = source.ID,
+										Input1 = source.Input1,
+										Name = source.Name
+									};
 
 									if (area.RecursiveParentId == 0)
 									{
@@ -135,7 +140,6 @@ namespace VioAlarmQualityCheckUtility.Class
 									area.SourcesList.Add(newSource);
 									areas[0].SourcesList.Add(newSource);
 								}
-							
 							}
 
 							reader.Close();

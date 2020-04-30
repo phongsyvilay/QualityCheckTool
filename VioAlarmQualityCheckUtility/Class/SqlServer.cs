@@ -205,34 +205,7 @@ namespace VioAlarmQualityCheckUtility.Class
 			return data;
 		}
 
-		//public void UpdateAwxSourceTagName(ReportModel sourceToUpdate, string newName)
-		//{
-		//	SqlCommand cmd = new SqlCommand();
-
-		//	try
-		//	{
-		//		cmd.Connection = SqlConn;
-		//		cmd.Connection.Open();
-		//		cmd.CommandText =
-		//			$"UPDATE {Settings.Default.SqlServerDatabase}.dbo.AWX_Source SET Name = '{newName}' WHERE SourceID = {sourceToUpdate.SourceID}";
-
-		//		cmd.CommandType = CommandType.Text;
-		//		cmd.ExecuteNonQuery();
-		//		cmd.Connection.Close();
-
-		//	}
-		//	catch (SqlException)
-		//	{
-		//		MessageBox.Show("Unable to update tag name.");
-		//		cmd.Connection.Close();
-		//	}
-		//	catch (Exception)
-		//	{
-		//		MessageBox.Show("Unable to update tag name.");
-		//		cmd.Connection.Close();
-		//	}
-		//}
-
+		/* Updates the point name in SQL when edited in the datagrid from the window. */
 		public void UpdateAwxSourcePointName(ReportModel sourceToUpdate, string newName)
 		{
 			SqlCommand cmd = new SqlCommand();
@@ -260,6 +233,34 @@ namespace VioAlarmQualityCheckUtility.Class
 				cmd.Connection.Close();
 			}
 		}
+
+		//public void UpdateAwxSourceTagName(ReportModel sourceToUpdate, string newName)
+		//{
+		//	SqlCommand cmd = new SqlCommand();
+
+		//	try
+		//	{
+		//		cmd.Connection = SqlConn;
+		//		cmd.Connection.Open();
+		//		cmd.CommandText =
+		//			$"UPDATE {Settings.Default.SqlServerDatabase}.dbo.AWX_Source SET Name = '{newName}' WHERE SourceID = {sourceToUpdate.SourceID}";
+
+		//		cmd.CommandType = CommandType.Text;
+		//		cmd.ExecuteNonQuery();
+		//		cmd.Connection.Close();
+
+		//	}
+		//	catch (SqlException)
+		//	{
+		//		MessageBox.Show("Unable to update tag name.");
+		//		cmd.Connection.Close();
+		//	}
+		//	catch (Exception)
+		//	{
+		//		MessageBox.Show("Unable to update tag name.");
+		//		cmd.Connection.Close();
+		//	}
+		//}
 
 
 		// Function:        
