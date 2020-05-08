@@ -34,7 +34,7 @@
                     <TextBox x:Name="NetUsernameBox" Width="105" Margin="0, 0, 5, 0" Height="24" Text="Login" GotFocus="netUsernameBox_GotFocus" LostFocus="netUsernameBox_LostFocus"/>
                     <PasswordBox x:Name="NetPasswordBox" Width="105" Height="24" Margin="5, 0, 0, 0" Password="Password" GotFocus="netPasswordBox_GotFocus" LostFocus="netPasswordBox_LostFocus"/>
                 </StackPanel>
-                <Button x:Name="SearchButton" HorizontalAlignment="Left" Content="Search" Width="65" Margin="20, 10, 0, 10" Click="SearchButton_Click" FontSize="13" />
+                <Button x:Name="SearchButton" HorizontalAlignment="Left" Content="Search" Width="60" Margin="20, 10, 0, 10" Click="SearchButton_Click" FontSize="13" />
             </StackPanel>
             <Rectangle Width="20" DockPanel.Dock="Right"/>
         </DockPanel>
@@ -64,8 +64,8 @@
                         <PasswordBox x:Name="ServerPasswordBox" Width="175"  Height="25"  Margin="15, 0, 0, 10" Password="password" GotFocus="ServerPasswordBox_GotFocus" LostFocus="ServerPasswordBox_LostFocus"/>
                     </StackPanel>
                 </StackPanel>
-                <StackPanel DockPanel.Dock="Bottom">
-                    <Button Content="Run Full Quality Check" HorizontalAlignment="Right" Width="180"  FontSize="13" Height="25" Click="Run"/>
+                <StackPanel DockPanel.Dock="Bottom" Margin="0, 10, 5, 0">
+                    <Button Content="Run Full Quality Check" HorizontalAlignment="Right" Width="190"  FontSize="13" Height="25" Click="Run"/>
                     <Button x:Name="RerunButton" Visibility="Hidden" HorizontalAlignment="Right" Content="Run Check for Tags Displayed" Width="190" Margin="0, 5, 0, 5" FontSize="13" Click="RerunButton_Click" />
                 </StackPanel>
 
@@ -125,6 +125,21 @@
                 <DataGridTextColumn x:Name="PointNameColumn" Header="Point Name" Binding="{Binding PointName}" Width="350" IsReadOnly="False"/>
                 <DataGridTextColumn Header="Point Status" Binding="{Binding PointStatus}" Width="100" IsReadOnly="True"/>
             </DataGrid.Columns>
+
+            <DataGrid.RowDetailsTemplate>
+                <DataTemplate>
+                    <DataGrid x:Name="ReportSubset" ItemsSource="{Binding ReportSubset}" AutoGenerateColumns="False" CanUserAddRows="False" HorizontalScrollBarVisibility="Auto" 
+                              AlternatingRowBackground= "#CAFEFE" RowBackground="#B1F0F5" CellEditEnding="Report_CellEditEnding" >
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="Auto" IsReadOnly="True"/>
+                            <DataGridTextColumn Binding="{Binding Area}" Width="200" IsReadOnly="True"/>
+                            <DataGridTextColumn Binding="{Binding TagName}" Width="225" IsReadOnly="True" />
+                            <DataGridTextColumn Binding="{Binding PointName}" Width="350" IsReadOnly="False"/>
+                            <DataGridTextColumn Binding="{Binding PointStatus}" Width="100" IsReadOnly="True"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DataTemplate>
+            </DataGrid.RowDetailsTemplate>
         </DataGrid>
 
         <!--Notification Popup-->

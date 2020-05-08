@@ -91,8 +91,10 @@ namespace VioAlarmQualityCheckUtility
 			Settings.Default.SqlServerInstance = "";
 			Settings.Default.SqlServerDatabase = "";
 
-			var sqlServerInstances = new List<string>();
-			sqlServerInstances.Add("-- Select a Server Instance --");
+			var sqlServerInstances = new List<string>
+			{
+				"-- Select a Server Instance --"
+			};
 
 			if (input.Equals(".\\"))
 				foreach (var item in SqlServer.GetLocalSqlInstances().ToList())
@@ -137,6 +139,18 @@ namespace VioAlarmQualityCheckUtility
 			}
 
 			return _foundReports;
+		}
+
+		/** Duplicate method found in QualityCheck **/
+		private string ReplaceFirst(string text, string search, string replace)
+		{
+			int pos = text.IndexOf(search, StringComparison.Ordinal);
+			if (pos < 0)
+			{
+				return text;
+			}
+
+			return text.Substring(0, pos) + replace + text.Substring(pos + search.Length);
 		}
 
 		/************************************************************************
@@ -187,6 +201,7 @@ namespace VioAlarmQualityCheckUtility
 			SqlServerDatabase_ComboBox.ItemsSource = null;
 			Report.ItemsSource = null;
 			AreaTreeView.ItemsSource = null;
+			RerunButton.Visibility = Visibility.Hidden;
 
 			Overlay.Visibility = Visibility.Collapsed;
 
@@ -202,7 +217,6 @@ namespace VioAlarmQualityCheckUtility
 
 		public void Run(object sender, RoutedEventArgs e)
 		{
-			//MessageBox.Show("Change 9");
 			try
 			{
 				allReports.Clear();
@@ -217,7 +231,6 @@ namespace VioAlarmQualityCheckUtility
 			catch (Exception)
 			{
 				MessageBox.Show("Could not run quality check.");
-
 			}
 		}
 
@@ -248,23 +261,11 @@ namespace VioAlarmQualityCheckUtility
 		}
 		private void RerunButton_Click(object sender, RoutedEventArgs e)
 		{
-			var listOnDisplay = ((List<ReportModel>) Report.ItemsSource).Select(r => r.SourceID).Distinct().ToList();
-			//_qualityCheck.CheckSome((List<ReportModel>) Report.ItemsSource);
+			var listOnDisplay = ((List<ReportModel>) Report.ItemsSource).ToList();
 
-			allReports.Clear();
-			var ash = new AreaSourceHandler();
-			var sources = _sqlServer.QueryAwxSources();
-			var allAreas = ash.GetAreas(sources);
-			AreaTreeView.ItemsSource = allAreas.FindAll(i => i.RecursiveParentId == 0);
-			allReports = _qualityCheck.CheckAll(allAreas[0].SourcesList);
-			_foundReports.Clear();
-
-			foreach (var report in listOnDisplay)
-			{
-				_foundReports.AddRange(allReports.FindAll(r => r.SourceID == report));
-			}
-
-			Report.ItemsSource = _foundReports;
+			listOnDisplay = _sqlServer.UpdateReportSource(listOnDisplay);
+			_qualityCheck.RecheckReports(listOnDisplay);
+			Report.ItemsSource = listOnDisplay;
 		}
 
 
@@ -601,13 +602,12 @@ namespace VioAlarmQualityCheckUtility
 			ReportModel rm = (ReportModel)e.Row.Item;
 			if (editedText == rm.PointName) return;
 			ReportModel original = allReports.Find(r => r.SourceID == rm.SourceID);
-			string newEditedText = original.PointName.Replace(rm.PointName, editedText);
+			string newEditedText = ReplaceFirst( original.PointName, rm.PointName, editedText);
 			original.PointName = newEditedText;
 
 			_sqlServer.UpdateAwxSourcePointName(rm, newEditedText);
 			Notification_Popup();
 		}
-
 
 		/**
 		 * Removes the cancel notification

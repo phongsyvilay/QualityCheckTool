@@ -42,7 +42,7 @@ namespace VioAlarmQualityCheckUtility.Class
 				var awxSourceList = sources;
 				var report = new List<ReportModel>();
 				var id = 0;
-
+				var original = 0;
 
 				//var ascEquipmentPropertyList = new List<AscEquipmentProperty>();
 				// Alarm Sources
@@ -60,7 +60,7 @@ namespace VioAlarmQualityCheckUtility.Class
 							var input1 = item.Input1.Replace("x=", "").Trim();
 							input1 = Regex.Replace(input1, pattern, "");
 
-							report.Add(new ReportModel
+							var reportModel = new ReportModel
 							{
 								ID = id,
 								Type = "Alarm",
@@ -69,9 +69,11 @@ namespace VioAlarmQualityCheckUtility.Class
 								PointName = item.Input1,
 								PointStatus = input1.Replace("quality", "").Trim(),
 								SourceID = item.ID,
-								MultipleInputs = true
+								ReportSubset = new List<ReportModel>()
+							};
 
-							});
+							report.Add(reportModel);
+							original = id;
 							id++;
 						}
 
@@ -79,36 +81,124 @@ namespace VioAlarmQualityCheckUtility.Class
 						points = points.Skip(1).ToArray();
 
 
-						for (var i = 0; i < points.Length; i++)
+						foreach (var inputPoint in points)
 						{
-							var newWord = "@" + Regex.Replace(points[i], pattern, "").Trim();
-							var reportModel = new ReportModel
-							{
-								ID = id,
-								Type = "Alarm",
-								Area = item.AreaName,
-								TagName = item.Name,
-								PointName = newWord,
-								PointStatus = "Updating...",
-								SourceID = item.ID,
-								MultipleInputs = false
-							};
+							var newWord = "@" + Regex.Replace(inputPoint, pattern, "").Trim();
 
-							report.Add(reportModel);
+							if (original != 0)
+							{
+								var reportSubset = new ReportModel
+								{
+									ID = id,
+									Type = "Alarm",
+									Area = item.AreaName,
+									TagName = item.Name,
+									PointName = newWord,
+									PointStatus = "Updating...",
+									SourceID = item.ID
+								};
+								(report.Find(r => r.ID == original)).ReportSubset.Add(reportSubset);
+								ReadPointAsync(newWord, new ReportState
+								{
+									Id = reportSubset.ID,
+									Input = newWord
+								});
+							}
+							else
+							{
+								var reportModel = new ReportModel
+								{
+									ID = id,
+									Type = "Alarm",
+									Area = item.AreaName,
+									TagName = item.Name,
+									PointName = newWord,
+									PointStatus = "Updating...",
+									SourceID = item.ID
+								};
+
+								report.Add(reportModel);
+
+								ReadPointAsync(newWord, new ReportState
+								{
+									Id = reportModel.ID,
+									Input = newWord
+								});
+							}
 							id++;
-
-							ReadPointAsync(newWord, new ReportState
-							{
-								Id = reportModel.ID,
-								Input = newWord
-							});
 						}
+
+						original = 0;
 					}
 
 				return report;
 			}
 			catch (Exception e)
 			{
+				MessageBox.Show(e.ToString());
+				// ReSharper disable once PossibleIntendedRethrow
+				throw e;
+			}
+		}
+
+		public void RecheckReports(List<ReportModel> reports)
+		{
+			try
+			{
+				_readDoneDelegate = ReadDoneCallBack;
+				foreach (var report in reports)
+				{
+					if (report.PointName.Contains("@"))
+					{
+						const string pattern = @"[(){}|&!]|(==\s+\d*)";
+
+						if (report.PointName.Contains("x="))
+						{
+							var input1 = report.PointName.Replace("x=", "").Trim();
+							input1 = Regex.Replace(input1, pattern, "");
+							report.PointStatus = input1.Replace("quality", "").Trim();
+						}
+
+						var points = report.PointStatus.Split('@');
+						points = points.Skip(1).ToArray();
+
+
+						foreach (var inputPoint in points)
+						{
+							var newWord = "@" + Regex.Replace(inputPoint, pattern, "").Trim();
+
+							if (report.ReportSubset != null)
+							{
+								foreach (var subReport in report.ReportSubset)
+								{
+									subReport.PointStatus = "Updating...";
+
+									ReadPointAsync(subReport.PointName, new ReportState
+									{
+										Id = subReport.ID,
+										Input = subReport.PointName
+									});
+								}
+							}
+							else
+							{
+								report.PointName = newWord;
+								report.PointStatus = "Updating...";
+
+								ReadPointAsync(newWord, new ReportState
+								{
+									Id = report.ID,
+									Input = newWord
+								});
+							}
+						}
+
+					}
+				}
+			}
+			catch (Exception e)
+			{
+				MessageBox.Show(e.ToString());
 				// ReSharper disable once PossibleIntendedRethrow
 				throw e;
 			}
@@ -127,9 +217,20 @@ namespace VioAlarmQualityCheckUtility.Class
 			{
 				Console.WriteLine(e);
 				throw;
-
 			}
 		}
+
+
+		// Read Point Async
+		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		public void ReadPointAsync(string pointName, ReportState state)
+		{
+			_fwxClientWrapper.ReadAsync(pointName, _readDoneDelegate, state);
+
+		}
+
 
 		// Read Done Call Back
 		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -140,38 +241,37 @@ namespace VioAlarmQualityCheckUtility.Class
 			var data = ((MainWindow)Application.Current.MainWindow)?.allReports;
 
 			if (data != null)
+			{
 				foreach (var item in data)
 				{
-					if (item.MultipleInputs && item.PointStatus.Contains(((ReportState)result.UserState).Input))
+					if (item.ReportSubset != null)
 					{
+						var subset = item.ReportSubset.Find(s => s.ID == ((ReportState)result.UserState).Id);
 
-						item.PointStatus = item.PointStatus.Replace(((ReportState)result.UserState).Input, result.Value.Status.ToString());
+						if (subset == null) continue;
+						subset.PointStatus = result.Value.Status.IsBad ? "Bad" : result.Value.Status.ToString();
+						item.PointStatus = ReplaceFirst(item.PointStatus, ((ReportState)result.UserState).Input, subset.PointStatus);
 
-					}
-					else if (item.MultipleInputs && !item.PointStatus.Contains("@"))
-					{
-						item.PointStatus = item.PointStatus.Contains("Bad") ? "Bad" : "Good";
-
+						if (!item.PointStatus.Contains("@"))
+							item.PointStatus = item.PointStatus.Contains("Bad") ? "Bad" : "Good";
 					}
 					else if (item.ID == ((ReportState)result.UserState).Id)
 					{
 						item.PointStatus = result.Value.Status.IsBad ? "Bad" : result.Value.Status.ToString();
-						if (item.ID == 3310)
-						{
-							MessageBox.Show("1!!!! \nID: " + item.ID + ". \nPointname: " + item.PointName + ". \nStatus: " + result.Value.Status + ".");
-						}
 					}
 				}
+			}
 		}
 
-		// Read Point Async
-		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		public void ReadPointAsync(string pointName, ReportState state)
+		private string ReplaceFirst(string text, string search, string replace)
 		{
-			_fwxClientWrapper.ReadAsync(pointName, _readDoneDelegate, state);
+			int pos = text.IndexOf(search, StringComparison.Ordinal);
+			if (pos < 0)
+			{
+				return text;
+			}
 
+			return text.Substring(0, pos) + replace + text.Substring(pos + search.Length);
 		}
 
 

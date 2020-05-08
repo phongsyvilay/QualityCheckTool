@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SqlClient;
+using System.Windows;
 using VioAlarmQualityCheckUtility.Models;
 using VioAlarmQualityCheckUtility.Properties;
 
@@ -9,6 +11,14 @@ namespace VioAlarmQualityCheckUtility.Class
 	public class AreaSourceHandler
 	{
 		private readonly SqlConnection _connection = new SqlConnection(Settings.Default.SqlConnectionString);
+
+		public class Source2Area
+		{
+			public int SourceID { get; set; }
+			public int AreaID { get; set; }
+
+		}
+
 		public List<AreaModel> GetAreas(List<AwxSource> sources)
 		{
 			List<AreaModel> areasList = new List<AreaModel>
@@ -76,83 +86,176 @@ namespace VioAlarmQualityCheckUtility.Class
 
 		public void AssignSourceToArea(List<AwxSource> sources, List<AreaModel> areas)
 		{
-			using (_connection)
+			var s2a = new List<Source2Area>();
+			
+			try
+			{
+
+				using (var command = new SqlCommand("dbo.GetAllFromAreaSource", _connection)
+				{ CommandType = CommandType.StoredProcedure })
+				{
+					var reader = command.ExecuteReader();
+
+					while (reader.Read())
+					{
+						s2a.Add(new Source2Area
+						{
+							SourceID = (int)reader[4],
+							AreaID = (int)reader[1]
+						});
+					}
+				}
+			}
+			catch (Exception e)
+			{
+				throw e;
+
+			}
+
+			for (int i = 0; i < sources.Count; i++)
 			{
 				try
 				{
-					foreach (var source in sources)
+					var source = sources[i];
+					var source2Areas = s2a.FindAll(s => s.SourceID == source.ID);
+
+					if (source2Areas.Count == 0)
 					{
-						using (var command = new SqlCommand("SELECT SA.SourceID, SA.AreaID, A.Name, A.ParentID " +
-						                                    "FROM .dbo.AWX_Source2Area SA, .dbo.AWX_Area A " +
-						                                    "WHERE SA.SourceID = @SrcID " +
-						                                    "AND SA.AreaID = A.AreaID", _connection))
+						var newSource = new AwxSource
 						{
-							command.Parameters.AddWithValue("@SrcID", source.ID);
-							SqlDataReader reader = command.ExecuteReader();
-
-							if (!reader.HasRows)
+							AreaName = areas[1].Name,
+							ID = source.ID,
+							Input1 = source.Input1,
+							Name = source.Name
+						};
+						//Adding to unassigned tags area
+						areas[0].SourcesList.Add(newSource);
+						areas[1].SourcesList.Add(newSource);
+					}
+					else
+					{
+						foreach (var source2Area in source2Areas)
+						{
+							AwxSource newSource = new AwxSource
 							{
-								AwxSource newSource = new AwxSource
-								{
-									AreaName = "Unassigned Tags",
-									ID = source.ID,
-									Input1 = source.Input1,
-									Name = source.Name
-								};
+								AreaName = "",
+								ID = source.ID,
+								Input1 = source.Input1,
+								Name = source.Name
+							};
 
-								//Adding to unassigned tags area
-								areas[0].SourcesList.Add(newSource);
-								areas[1].SourcesList.Add(newSource);
+							var area = areas.Find(a => a.Id == source2Area.AreaID);
+
+							if (area.RecursiveParentId == 0)
+							{
+								newSource.AreaName = area.Name;
 							}
 							else
 							{
-								while (reader.Read())
+								AreaModel tempArea = areas.Find(parent => parent.Id == area.RecursiveParentId);
+
+								var parentAreasString = tempArea.Name;
+
+								while (tempArea.RecursiveParentId != 0)
 								{
-									var area = areas.Find(a => a.Id == (int) reader[1]);
-
-									AwxSource newSource = new AwxSource
-									{
-										AreaName = "",
-										ID = source.ID,
-										Input1 = source.Input1,
-										Name = source.Name
-									};
-
-									if (area.RecursiveParentId == 0)
-									{
-										newSource.AreaName = area.Name;
-									}
-									else
-									{
-										AreaModel tempArea = areas.Find(parent => parent.Id == area.RecursiveParentId);
-
-										var parentAreasString = tempArea.Name;
-
-										while (tempArea.RecursiveParentId != 0)
-										{
-											tempArea = areas.Find(a => a.Id == tempArea.RecursiveParentId);
-											parentAreasString = tempArea.Name + "\\" + parentAreasString;
-										}
-
-										newSource.AreaName = parentAreasString + "\\" + area.Name;
-									}
-
-									area.SourcesList.Add(newSource);
-									areas[0].SourcesList.Add(newSource);
+									tempArea = areas.Find(a => a.Id == tempArea.RecursiveParentId);
+									parentAreasString = tempArea.Name + "\\" + parentAreasString;
 								}
+
+								newSource.AreaName = parentAreasString + "\\" + area.Name;
 							}
 
-							reader.Close();
+							area.SourcesList.Add(newSource);
+							areas[0].SourcesList.Add(newSource);
 						}
 					}
 				}
-				catch (Exception e)
+				catch
 				{
-					Console.WriteLine(e);
-					throw;
+					MessageBox.Show("AssignSourceToArea Error");
 				}
+
 			}
 		}
 
+		//public void AssignSourceToArea(List<AwxSource> sources, List<AreaModel> areas)
+		//{
+		//	using (_connection)
+		//	{
+		//		try
+		//		{
+		//			foreach (var source in sources)
+		//			{
+		//				using (var command = new SqlCommand("SELECT SA.SourceID, SA.AreaID, A.Name, A.ParentID " +
+		//				                                    "FROM .dbo.AWX_Source2Area SA, .dbo.AWX_Area A " +
+		//				                                    "WHERE SA.SourceID = @SrcID " +
+		//				                                    "AND SA.AreaID = A.AreaID", _connection))
+		//				{
+		//					command.Parameters.AddWithValue("@SrcID", source.ID);
+		//					SqlDataReader reader = command.ExecuteReader();
+
+		//					if (!reader.HasRows)
+		//					{
+		//						AwxSource newSource = new AwxSource
+		//						{
+		//							AreaName = "Unassigned Tags",
+		//							ID = source.ID,
+		//							Input1 = source.Input1,
+		//							Name = source.Name
+		//						};
+
+		//						//Adding to unassigned tags area
+		//						areas[0].SourcesList.Add(newSource);
+		//						areas[1].SourcesList.Add(newSource);
+		//					}
+		//					else
+		//					{
+		//						while (reader.Read())
+		//						{
+		//							var area = areas.Find(a => a.Id == (int) reader[1]);
+
+		//							AwxSource newSource = new AwxSource
+		//							{
+		//								AreaName = "",
+		//								ID = source.ID,
+		//								Input1 = source.Input1,
+		//								Name = source.Name
+		//							};
+
+		//							if (area.RecursiveParentId == 0)
+		//							{
+		//								newSource.AreaName = area.Name;
+		//							}
+		//							else
+		//							{
+		//								AreaModel tempArea = areas.Find(parent => parent.Id == area.RecursiveParentId);
+
+		//								var parentAreasString = tempArea.Name;
+
+		//								while (tempArea.RecursiveParentId != 0)
+		//								{
+		//									tempArea = areas.Find(a => a.Id == tempArea.RecursiveParentId);
+		//									parentAreasString = tempArea.Name + "\\" + parentAreasString;
+		//								}
+
+		//								newSource.AreaName = parentAreasString + "\\" + area.Name;
+		//							}
+
+		//							area.SourcesList.Add(newSource);
+		//							areas[0].SourcesList.Add(newSource);
+		//						}
+		//					}
+
+		//					reader.Close();
+		//				}
+		//			}
+		//		}
+		//		catch (Exception e)
+		//		{
+		//			Console.WriteLine(e);
+		//			throw;
+		//		}
+		//	}
+		//}
 	}
 }

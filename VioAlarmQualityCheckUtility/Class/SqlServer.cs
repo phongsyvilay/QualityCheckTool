@@ -77,7 +77,10 @@ namespace VioAlarmQualityCheckUtility.Class
 
 		public List<string> GetRemoteInstances(string computerName, string username, string password)
 		{
-			List<string> instances = new List<string>();
+			List<string> instances = new List<string>
+			{
+				"-- Select a Server Instance --"
+			};
 
 			using (NetworkShareAccessor.Access(computerName, Environment.UserName, username, password))
 			{
@@ -87,6 +90,7 @@ namespace VioAlarmQualityCheckUtility.Class
 				RegistryKey temp = envRegistryKey.OpenSubKey(@"SOFTWARE\Microsoft\Microsoft SQL Server\Instance Names\SQL", false);
 				if (temp != null)
 				{
+
 					foreach (var names in temp.GetValueNames())
 					{
 						instances.Add(names);
@@ -178,6 +182,7 @@ namespace VioAlarmQualityCheckUtility.Class
 		{
 			SqlCommand cmd = new SqlCommand();
 			List<AwxSource> data = new List<AwxSource>();
+			_sqlConn = new SqlConnection(Settings.Default.SqlConnectionString);
 
 			cmd.CommandText = "SELECT Name, Input1, SourceID FROM " + Settings.Default.SqlServerDatabase + ".dbo.AWX_Source;";
 			cmd.CommandType = CommandType.Text;
@@ -205,10 +210,53 @@ namespace VioAlarmQualityCheckUtility.Class
 			return data;
 		}
 
+		public List<ReportModel> UpdateReportSource(List<ReportModel> reports)
+		{
+			_sqlConn = new SqlConnection(Settings.Default.SqlConnectionString);
+			using (_sqlConn)
+			{
+				_sqlConn.Open();
+				_sqlConn.ChangeDatabase(Settings.Default.SqlServerDatabase);
+				try
+				{
+					foreach (var reportModel in reports)
+					{
+						using (var command = new SqlCommand("SELECT Name, Input1 " +
+						                                    "FROM .dbo.AWX_Source " +
+						                                    "WHERE SourceID = @SrcID ", _sqlConn))
+						{
+							command.Parameters.AddWithValue("@SrcID", reportModel.SourceID);
+							var reader = command.ExecuteReader();
+
+							while (reader.Read())
+							{
+								reportModel.TagName = reader[0].ToString();
+								reportModel.PointName = reader[1].ToString();
+							}
+
+							reader.Close();
+						}
+					}
+				}
+				catch (SqlException ex)
+				{
+					MessageBox.Show(ex.ToString());
+					//MessageBox.Show("Unable to query source.");
+				}
+				catch (Exception e)
+				{
+					MessageBox.Show(e.ToString());
+				}
+			}
+
+			return reports;
+		}
+
 		/* Updates the point name in SQL when edited in the datagrid from the window. */
 		public void UpdateAwxSourcePointName(ReportModel sourceToUpdate, string newName)
 		{
 			SqlCommand cmd = new SqlCommand();
+			_sqlConn = new SqlConnection(Settings.Default.SqlConnectionString);
 
 			try
 			{
