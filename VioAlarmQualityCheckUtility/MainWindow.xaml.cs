@@ -170,6 +170,19 @@ namespace VioAlarmQualityCheckUtility
 			{
 				InitializeSqlServerData(".");
 			}
+			else if(RemoteSql.IsChecked != null && RemoteSql.IsChecked.Value)
+			{
+				SqlServerInstance_ComboBox.ItemsSource = new List<string>
+				{
+					_netConnection
+				};
+
+				SqlServerInstance_ComboBox.SelectedIndex = 0;
+				ServDif.IsChecked = true;
+				ServerUsernameBox.Text = _netUsername;
+				ServerPasswordBox.Password = _netPassword;
+				SqlServerDatabase_ComboBox.ItemsSource = SqlServer.GetSqlInstanceDatabases(_netConnection, _netUsername, _netPassword);
+			}
 			else
 			{
 				try
@@ -226,7 +239,6 @@ namespace VioAlarmQualityCheckUtility
 				AreaTreeView.ItemsSource = allAreas.FindAll(i => i.RecursiveParentId == 0);
 				Report.ItemsSource = allReports = _qualityCheck.CheckAll(allAreas[0].SourcesList);
 				RerunButton.Visibility = Visibility.Visible;
-
 			}
 			catch (Exception)
 			{
@@ -276,7 +288,7 @@ namespace VioAlarmQualityCheckUtility
 		/** Computer connection radio buttons **/
 		private void radioButton_Checked(object sender, RoutedEventArgs e)
 		{
-			if (sender is RadioButton rb && rb.Name.Equals("RemoteMachine"))
+			if (sender is RadioButton rb && (rb.Name.Equals("RemoteMachine") || rb.Name.Equals("RemoteSql")))
 			{
 				NetCredentialPanel.Visibility = Visibility.Visible;
 				NetConnection.Visibility = Visibility.Visible;
@@ -574,7 +586,6 @@ namespace VioAlarmQualityCheckUtility
 			{
 				_serverPassword = ServerPasswordBox.Password.Trim();
 			}
-
 		}
 
 		private void SearchBox_LostFocus(object sender, RoutedEventArgs e)
@@ -627,7 +638,11 @@ namespace VioAlarmQualityCheckUtility
 			Notification.Visibility = Visibility.Visible;
 		}
 
-		
+		//private void Report_Sorting(object sender, DataGridSortingEventArgs e)
+		//{
+		//	Console.WriteLine(e.Column.SortMemberPath);
+		//	Console.WriteLine(e.Column.SortMemberPath);
+		//}
 	}
 	/************************************************************************
 	 * Unused methods

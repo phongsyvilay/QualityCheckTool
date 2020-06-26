@@ -135,7 +135,7 @@ namespace VioAlarmQualityCheckUtility.Class
 			}
 			catch (Exception e)
 			{
-				MessageBox.Show(e.ToString());
+				//MessageBox.Show(e.ToString());
 				// ReSharper disable once PossibleIntendedRethrow
 				throw e;
 			}
@@ -211,6 +211,7 @@ namespace VioAlarmQualityCheckUtility.Class
 			try
 			{
 				var sampleValue = _fwxClientWrapper.Read(@"@RSLinx OPC Server\[CC100]U502500.AUX.Value");
+				//MessageBox.Show(sampleValue.Status.ToString());
 				return sampleValue.Status.ToString() != "Bad - User Access Denied";
 			}
 			catch (Exception e)

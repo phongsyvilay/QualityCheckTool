@@ -164,10 +164,10 @@ namespace VioAlarmQualityCheckUtility.Class
 				cmd.Connection.Close();
 
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
-				MessageBox.Show("Could not establish connection to selected SQL Server Instance. Try using a username and password.");
-				throw;
+				Console.WriteLine(ex.ToString());
+				MessageBox.Show("Could not establish connection to selected SQL Server Instance.");
 			}
 			
 			return databases;
