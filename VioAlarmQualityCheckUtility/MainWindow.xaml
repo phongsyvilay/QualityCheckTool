@@ -119,7 +119,7 @@
             <TextBlock x:Name="OverlayText" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Grid>
 
-        <DataGrid x:Name="Report" AutoGenerateColumns="False" HorizontalScrollBarVisibility="Auto" CanUserAddRows="False" CellEditEnding="Report_CellEditEnding"  Grid.Row="1" Grid.RowSpan="2" Grid.Column="1" Grid.ColumnSpan="3">
+        <DataGrid x:Name="Report" AutoGenerateColumns="False" HorizontalScrollBarVisibility="Auto" CanUserAddRows="False" CellEditEnding="Report_CellEditEnding"  Grid.Row="1" Grid.RowSpan="2" Grid.Column="1" Grid.ColumnSpan="3" LoadingRowDetails="Report_LoadingRowDetails" >
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="Auto" IsReadOnly="True"/>
                 <DataGridTextColumn Header="Area" Binding="{Binding Area}" Width="200" IsReadOnly="True"/>
@@ -131,7 +131,7 @@
             <DataGrid.RowDetailsTemplate>
                 <DataTemplate>
                     <DataGrid x:Name="ReportSubset" ItemsSource="{Binding ReportSubset}" AutoGenerateColumns="False" CanUserAddRows="False" HorizontalScrollBarVisibility="Auto" 
-                              AlternatingRowBackground= "#CAFEFE" RowBackground="#B1F0F5" CellEditEnding="Report_CellEditEnding" >
+                              AlternatingRowBackground= "#CAFEFE" RowBackground="#B1F0F5" CellEditEnding="Report_CellEditEnding" Visibility="Collapsed">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="Auto" IsReadOnly="True"/>
                             <DataGridTextColumn Binding="{Binding Area}" Width="200" IsReadOnly="True"/>

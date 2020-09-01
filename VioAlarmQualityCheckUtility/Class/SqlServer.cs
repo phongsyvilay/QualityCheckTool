@@ -174,7 +174,7 @@ namespace VioAlarmQualityCheckUtility.Class
 		}
 
 
-		// Functions: GetAlarmSources, GetRemoteAlarmSources, and QueryAwxSources         
+		// Functions: GetAlarmSources, GetRemoteAlarmSources, and QueryAwxSources
 		// Description: These are all related to opening up a SQL connection to either a remote server or local SQL instance and querying the SQL DB for the sources.
 		// ==============================================================================================================================================================
 
@@ -217,25 +217,28 @@ namespace VioAlarmQualityCheckUtility.Class
 			{
 				_sqlConn.Open();
 				_sqlConn.ChangeDatabase(Settings.Default.SqlServerDatabase);
+
 				try
 				{
-					foreach (var reportModel in reports)
+
+					using (var command = new SqlCommand("SELECT Name, Input1, SourceID " +
+															"FROM .dbo.AWX_Source", _sqlConn))
 					{
-						using (var command = new SqlCommand("SELECT Name, Input1 " +
-						                                    "FROM .dbo.AWX_Source " +
-						                                    "WHERE SourceID = @SrcID ", _sqlConn))
+						//command.Parameters.AddWithValue("SrcIDs", ids);
+						var reader = command.ExecuteReader();
+
+						while (reader.Read())
 						{
-							command.Parameters.AddWithValue("@SrcID", reportModel.SourceID);
-							var reader = command.ExecuteReader();
+							var foundReports = reports.FindAll(s => s.SourceID == (int) reader[2]);
 
-							while (reader.Read())
+							foreach(var report in foundReports)
 							{
-								reportModel.TagName = reader[0].ToString();
-								reportModel.PointName = reader[1].ToString();
+								reports.Find(r => r.ID == report.ID).TagName = reader[0].ToString();
+								reports.Find(r => r.ID == report.ID).PointName = reader[1].ToString();
 							}
-
-							reader.Close();
 						}
+
+						reader.Close();
 					}
 				}
 				catch (SqlException ex)

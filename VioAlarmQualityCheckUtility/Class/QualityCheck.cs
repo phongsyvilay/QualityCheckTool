@@ -141,6 +141,8 @@ namespace VioAlarmQualityCheckUtility.Class
 			}
 		}
 
+		/** This check of quality is used on current display of tags. The reports that are passed through have had sources that were 
+		 * refetched from the database. **/
 		public void RecheckReports(List<ReportModel> reports)
 		{
 			try
@@ -161,7 +163,14 @@ namespace VioAlarmQualityCheckUtility.Class
 
 						var points = report.PointStatus.Split('@');
 						points = points.Skip(1).ToArray();
-
+						if(report.ReportSubset != null)
+						{
+							foreach(var sub in report.ReportSubset)
+							{
+								sub.PointName = "";
+								sub.PointStatus = "Updating...";
+							}
+						}
 
 						foreach (var inputPoint in points)
 						{
@@ -169,16 +178,14 @@ namespace VioAlarmQualityCheckUtility.Class
 
 							if (report.ReportSubset != null)
 							{
-								foreach (var subReport in report.ReportSubset)
-								{
-									subReport.PointStatus = "Updating...";
+								var subReport = report.ReportSubset.Find(name => name.PointName == "");
+								subReport.PointName = newWord;
 
-									ReadPointAsync(subReport.PointName, new ReportState
-									{
-										Id = subReport.ID,
-										Input = subReport.PointName
-									});
-								}
+								ReadPointAsync(subReport.PointName, new ReportState
+								{
+									Id = subReport.ID,
+									Input = subReport.PointName
+								});
 							}
 							else
 							{
@@ -192,7 +199,6 @@ namespace VioAlarmQualityCheckUtility.Class
 								});
 							}
 						}
-
 					}
 				}
 			}
@@ -229,7 +235,6 @@ namespace VioAlarmQualityCheckUtility.Class
 		public void ReadPointAsync(string pointName, ReportState state)
 		{
 			_fwxClientWrapper.ReadAsync(pointName, _readDoneDelegate, state);
-
 		}
 
 
@@ -249,12 +254,14 @@ namespace VioAlarmQualityCheckUtility.Class
 					{
 						var subset = item.ReportSubset.Find(s => s.ID == ((ReportState)result.UserState).Id);
 
-						if (subset == null) continue;
-						subset.PointStatus = result.Value.Status.IsBad ? "Bad" : result.Value.Status.ToString();
-						item.PointStatus = ReplaceFirst(item.PointStatus, ((ReportState)result.UserState).Input, subset.PointStatus);
+						if (subset != null)
+						{
+							subset.PointStatus = result.Value.Status.IsBad ? "Bad" : result.Value.Status.ToString();
+							item.PointStatus = ReplaceFirst(item.PointStatus, ((ReportState)result.UserState).Input, subset.PointStatus);
 
-						if (!item.PointStatus.Contains("@"))
-							item.PointStatus = item.PointStatus.Contains("Bad") ? "Bad" : "Good";
+							if (!item.PointStatus.Contains("@"))
+								item.PointStatus = item.PointStatus.Contains("Bad") ? "Bad" : "Good";
+						}
 					}
 					else if (item.ID == ((ReportState)result.UserState).Id)
 					{

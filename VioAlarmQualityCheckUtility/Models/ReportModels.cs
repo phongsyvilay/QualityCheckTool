@@ -34,7 +34,6 @@ namespace VioAlarmQualityCheckUtility.Models
 		{
 			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(pointStatus));
 		}
-
 	}
 
 	//public class ReportSubset

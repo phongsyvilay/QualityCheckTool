@@ -174,7 +174,8 @@ namespace VioAlarmQualityCheckUtility
 			{
 				SqlServerInstance_ComboBox.ItemsSource = new List<string>
 				{
-					_netConnection
+					
+					"-- Select a Server Instance --", _netConnection
 				};
 
 				SqlServerInstance_ComboBox.SelectedIndex = 0;
@@ -190,8 +191,9 @@ namespace VioAlarmQualityCheckUtility
 					var sqlServerInstances = _sqlServer.GetRemoteInstances(_netConnection, _netUsername, _netPassword);
 					SqlServerInstance_ComboBox.ItemsSource = sqlServerInstances;
 				}
-				catch (Exception)
+				catch (Exception es)
 				{
+					Console.WriteLine(es.ToString());
 					MessageBox.Show("Searching Error");
 				}
 			}
@@ -237,7 +239,8 @@ namespace VioAlarmQualityCheckUtility
 				var sources = _sqlServer.QueryAwxSources();
 				var allAreas = ash.GetAreas(sources);
 				AreaTreeView.ItemsSource = allAreas.FindAll(i => i.RecursiveParentId == 0);
-				Report.ItemsSource = allReports = _qualityCheck.CheckAll(allAreas[0].SourcesList);
+				allReports = _qualityCheck.CheckAll(allAreas[0].SourcesList);
+				Report.ItemsSource = allReports.OrderBy(report => report.PointStatus).ThenBy(report => report.TagName);
 				RerunButton.Visibility = Visibility.Visible;
 			}
 			catch (Exception)
@@ -277,7 +280,7 @@ namespace VioAlarmQualityCheckUtility
 
 			listOnDisplay = _sqlServer.UpdateReportSource(listOnDisplay);
 			_qualityCheck.RecheckReports(listOnDisplay);
-			Report.ItemsSource = listOnDisplay;
+			Report.ItemsSource = listOnDisplay.OrderBy(report => report.PointStatus).ThenBy(report => report.TagName);
 		}
 
 
@@ -638,11 +641,16 @@ namespace VioAlarmQualityCheckUtility
 			Notification.Visibility = Visibility.Visible;
 		}
 
-		//private void Report_Sorting(object sender, DataGridSortingEventArgs e)
-		//{
-		//	Console.WriteLine(e.Column.SortMemberPath);
-		//	Console.WriteLine(e.Column.SortMemberPath);
-		//}
+		/** 
+		 * If the original row does not get broken down into subreports, then when clicked on will not
+		 * show any detail rows for it. 
+		 * **/
+		private void Report_LoadingRowDetails(object sender, DataGridRowDetailsEventArgs e)
+		{
+			if ((e.DetailsElement as DataGrid).Items.Count > 0)
+				e.DetailsElement.Visibility = Visibility.Visible;
+
+		}		
 	}
 	/************************************************************************
 	 * Unused methods
