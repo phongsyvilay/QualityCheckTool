@@ -20,7 +20,6 @@
         </Grid.ColumnDefinitions>
 
         <!-- Begin Search for Servers Section-->
-
         <DockPanel Grid.Row="0" Grid.Column="0" VerticalAlignment="Top" MinHeight="160">
             <TextBlock DockPanel.Dock="Top"  Background="#414141" Foreground="White" FontSize="20" Height="30" Padding="20, 0, 0, 0">Search for Servers</TextBlock>
             <Rectangle Width="20" DockPanel.Dock="Left"/>
@@ -41,6 +40,7 @@
         </DockPanel>
         <Border BorderThickness="0, 1, 0, 0" BorderBrush="#707070"/>
         <!--End of Search for Servers Section-->
+        
         <TreeView x:Name="AreaTreeView" Grid.Row="2" Grid.Column="0" BorderThickness="0, 1, 0, 0" ItemsSource="{Binding}" SelectedItemChanged="AreaTreeView_OnSelectedItemChanged">
             <TreeView.ItemTemplate>
                 <HierarchicalDataTemplate x:Name="dataNames" ItemsSource="{Binding Items}" >
@@ -50,10 +50,11 @@
         </TreeView>
 
 
+        <!--Begin of SQL connect section-->
         <Border Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" BorderThickness="1, 0, 0, 0" BorderBrush="#707070">
             <DockPanel>
                 <TextBlock DockPanel.Dock="Top" Background="#414141" Foreground="White" FontSize="20" Height="30" Padding="20, 0, 0, 0">SQL Connect</TextBlock>
-                <!--Begin of SQL connect section-->
+                
                 <!--Authentication Method Section-->
                 <Rectangle DockPanel.Dock="Right" Width="10"/>
                 <StackPanel MinWidth="215" DockPanel.Dock="Left">
@@ -70,7 +71,6 @@
                     <Button Content="Run Full Quality Check" HorizontalAlignment="Right" Width="190"  FontSize="13" Height="25" Click="Run"/>
                     <Button x:Name="RerunButton" Visibility="Hidden" HorizontalAlignment="Right" Content="Run Check for Tags Displayed" Width="190" Margin="0, 5, 0, 5" FontSize="13" Click="RerunButton_Click" />
                 </StackPanel>
-
                 <StackPanel>
                     <TextBlock FontWeight="DemiBold" FontSize="16" Height="24" Margin="0, 10, 0, 0" >Instance</TextBlock>
                     <ComboBox x:Name="SqlServerInstance_ComboBox" Height="24" Width="180" Margin="0,10,0,0" SelectionChanged="SqlServerInstance_ComboBox_SelectionChanged"/>
@@ -81,15 +81,14 @@
                     <ComboBox x:Name="SqlServerDatabase_ComboBox" Height="24"   Margin="10, 10, 5, 0" Width="180" SelectionChanged="SqlServerDatabase_ComboBox_SelectionChanged" />
                 </StackPanel>
             </DockPanel>
-            <!--End of SQL connect section-->
         </Border>
+        <!--End of SQL connect section-->
 
         <!--Search for... Section-->
         <Border x:Name="SearchForSection" BorderThickness="1, 0, 0, 0" BorderBrush="#707070" Grid.Row="0" Grid.Column="3">
 
             <Expander Header="Search for..." IsExpanded="True">
                 <StackPanel Orientation="Vertical">
-                    <!--<TextBlock  Background="#414141" Foreground="White" FontSize="20" Height="30" Padding="20, 0, 0, 0">Search for...</TextBlock>-->
 
                     <!--Tag Name Searchbox Section-->
                     <StackPanel Orientation="Horizontal" Margin="20, 15, 0, 2">
@@ -111,7 +110,7 @@
         </Border>
         <!--End of Search for... section-->
 
-
+         <!--Beginning of Report Grid Area-->                         
         <Grid x:Name="Overlay" Panel.ZIndex="1000" Grid.Row="1" Grid.RowSpan="2" Grid.Column="1" Grid.ColumnSpan="3" Visibility="Collapsed" Margin="0, 26, 0, 0">
             <Grid.Background>
                 <SolidColorBrush Color="Black" Opacity=".4"/>
@@ -143,6 +142,7 @@
                 </DataTemplate>
             </DataGrid.RowDetailsTemplate>
         </DataGrid>
+        <!--End of Report Grid Area-->
 
         <!--Notification Popup-->
         <StackPanel x:Name="Notification" Background="#FFFFDF35" DockPanel.Dock="Top" Height="20" VerticalAlignment="Top" Orientation="Horizontal" Visibility="Collapsed"  Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3">

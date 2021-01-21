@@ -14,9 +14,9 @@ namespace VioAlarmQualityCheckUtility.Class
 	{
 		private static SqlConnection _sqlConn;
 
-		// Function:        Get Local SQL Server Instances
+		// Function:        Get local SQL server instances
 		// Description:     Returns a collection of installed local SQL Server instances
-		// ==============================================================================================================================================================
+		// ====================================================================================================================
 		public static IEnumerable<string> GetLocalSqlInstances()
 		{
 			if (Environment.Is64BitOperatingSystem)
@@ -46,6 +46,8 @@ namespace VioAlarmQualityCheckUtility.Class
 			}
 		}
 
+		// Function:        Get local SQL server instances helper function
+		// ====================================================================================================================
 		private static IEnumerable<string> GetLocalSqlInstances(RegistryKey hive)
 		{
 			const string keyName = @"Software\Microsoft\Microsoft SQL Server";
@@ -74,7 +76,8 @@ namespace VioAlarmQualityCheckUtility.Class
 			}
 		}
 
-
+		// Function:        Get SQL server instances from a remote computer
+		// ====================================================================================================================
 		public List<string> GetRemoteInstances(string computerName, string username, string password)
 		{
 			List<string> instances = new List<string>
@@ -101,7 +104,8 @@ namespace VioAlarmQualityCheckUtility.Class
 			}
 		}
 
-
+		// Function:        Get Local SQL Server Instances
+		// ====================================================================================================================
 		public List<string> GetSqlInstances()
 		{
 			System.Data.Sql.SqlDataSourceEnumerator instance = System.Data.Sql.SqlDataSourceEnumerator.Instance;
@@ -119,12 +123,11 @@ namespace VioAlarmQualityCheckUtility.Class
 			}
 
 			return list;
-
 		}
 
 		// Function:        Get Databases from Selected Local or Remote SQL Server Instance
 		// Description:     Returns a collection of databases from the user selected local SQL Server instance
-		// ==============================================================================================================================================================
+		// ====================================================================================================================
 		public static List<string> GetLocalSqlInstanceDatabases()
 		{
 			Settings.Default.SqlConnectionString = "Data Source=" + Settings.Default.SqlServerInstance + ";Integrated Security=True";
@@ -132,6 +135,8 @@ namespace VioAlarmQualityCheckUtility.Class
 			return QueryDatabases();
 		}
 
+		// Function:        Get databases from sql server
+		// ====================================================================================================================
 		public static List<string> GetSqlInstanceDatabases(string instance, string username, string password)
 		{
 			Settings.Default.SqlConnectionString = $"Data Source={instance}; User ID={username}; Password={password}";
@@ -139,6 +144,8 @@ namespace VioAlarmQualityCheckUtility.Class
 			return QueryDatabases();
 		}
 
+		// Function:       Gets databases by querying the sql server
+		// ====================================================================================================================
 		public static List<string> QueryDatabases() 
 		{
 			List<string> databases = new List<string>();
@@ -174,10 +181,9 @@ namespace VioAlarmQualityCheckUtility.Class
 		}
 
 
-		// Functions: GetAlarmSources, GetRemoteAlarmSources, and QueryAwxSources
-		// Description: These are all related to opening up a SQL connection to either a remote server or local SQL instance and querying the SQL DB for the sources.
-		// ==============================================================================================================================================================
-
+		// Function:		opening up a SQL connection to either a remote server or local SQL instance 
+		//					and querying the SQL DB for the sources.
+		// ====================================================================================================================
 		public List<AwxSource> QueryAwxSources()
 		{
 			SqlCommand cmd = new SqlCommand();
@@ -210,52 +216,8 @@ namespace VioAlarmQualityCheckUtility.Class
 			return data;
 		}
 
-		public List<ReportModel> UpdateReportSource(List<ReportModel> reports)
-		{
-			_sqlConn = new SqlConnection(Settings.Default.SqlConnectionString);
-			using (_sqlConn)
-			{
-				_sqlConn.Open();
-				_sqlConn.ChangeDatabase(Settings.Default.SqlServerDatabase);
-
-				try
-				{
-
-					using (var command = new SqlCommand("SELECT Name, Input1, SourceID " +
-															"FROM .dbo.AWX_Source", _sqlConn))
-					{
-						//command.Parameters.AddWithValue("SrcIDs", ids);
-						var reader = command.ExecuteReader();
-
-						while (reader.Read())
-						{
-							var foundReports = reports.FindAll(s => s.SourceID == (int) reader[2]);
-
-							foreach(var report in foundReports)
-							{
-								reports.Find(r => r.ID == report.ID).TagName = reader[0].ToString();
-								reports.Find(r => r.ID == report.ID).PointName = reader[1].ToString();
-							}
-						}
-
-						reader.Close();
-					}
-				}
-				catch (SqlException ex)
-				{
-					MessageBox.Show(ex.ToString());
-					//MessageBox.Show("Unable to query source.");
-				}
-				catch (Exception e)
-				{
-					MessageBox.Show(e.ToString());
-				}
-			}
-
-			return reports;
-		}
-
-		/* Updates the point name in SQL when edited in the datagrid from the window. */
+		// Function:        Updates the point name in SQL when edited in the datagrid from the window.
+		// ====================================================================================================================
 		public void UpdateAwxSourcePointName(ReportModel sourceToUpdate, string newName)
 		{
 			SqlCommand cmd = new SqlCommand();
@@ -284,78 +246,5 @@ namespace VioAlarmQualityCheckUtility.Class
 				cmd.Connection.Close();
 			}
 		}
-
-		//public void UpdateAwxSourceTagName(ReportModel sourceToUpdate, string newName)
-		//{
-		//	SqlCommand cmd = new SqlCommand();
-
-		//	try
-		//	{
-		//		cmd.Connection = SqlConn;
-		//		cmd.Connection.Open();
-		//		cmd.CommandText =
-		//			$"UPDATE {Settings.Default.SqlServerDatabase}.dbo.AWX_Source SET Name = '{newName}' WHERE SourceID = {sourceToUpdate.SourceID}";
-
-		//		cmd.CommandType = CommandType.Text;
-		//		cmd.ExecuteNonQuery();
-		//		cmd.Connection.Close();
-
-		//	}
-		//	catch (SqlException)
-		//	{
-		//		MessageBox.Show("Unable to update tag name.");
-		//		cmd.Connection.Close();
-		//	}
-		//	catch (Exception)
-		//	{
-		//		MessageBox.Show("Unable to update tag name.");
-		//		cmd.Connection.Close();
-		//	}
-		//}
-
-
-		// Function:        
-		// Description:     
-		// ==============================================================================================================================================================
-		//public List<AscEquipmentProperty> GetAssetEquipmentProperties()
-		//{
-		//	List<AscEquipmentProperty> data = new List<AscEquipmentProperty>();
-
-		//	SqlConnection sqlConn = new SqlConnection("Data Source=" + Properties.Settings.Default.SqlServerInstance + ";Integrated Security=True");
-
-		//	SqlCommand cmd = new SqlCommand();
-
-		//	try
-		//	{
-		//		cmd.CommandText = "SELECT ParentID, Name, RealtimePointName FROM " + Properties.Settings.Default.SqlServerDatabase + ".dbo.ASC_EquipmentProperties;";
-		//		cmd.CommandType = CommandType.Text;
-		//		cmd.Connection = sqlConn;
-		//		cmd.Connection.Open();
-
-		//		var reader = cmd.ExecuteReader();
-
-		//		while (reader.Read())
-		//		{
-		//			var ascEquipmentProperty = new AscEquipmentProperty
-		//			{
-		//				ParentID = reader[0].ToString(),
-		//				Name = reader[1].ToString(),
-		//				RealtimePointName = reader[2].ToString()
-		//			};
-
-		//			data.Add(ascEquipmentProperty);
-		//		}
-
-		//		reader.Close();
-
-		//		cmd.Connection.Close();
-		//	}
-		//	catch (Exception)
-		//	{
-		//		MessageBox.Show("GetAssetEquipmentProperty Error");
-		//	}
-
-		//	return data;
-		//}
 	}
 }

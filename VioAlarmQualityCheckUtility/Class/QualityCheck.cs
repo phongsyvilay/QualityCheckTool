@@ -5,310 +5,199 @@ using System.Text.RegularExpressions;
 using System.Windows;
 using Ico.Fwx.ClientWrapper;
 using VioAlarmQualityCheckUtility.Models;
-using VioAlarmQualityCheckUtility.Windows;
 
 namespace VioAlarmQualityCheckUtility.Class
 {
-	internal class QualityCheck
-	{
-		//private SqlServer SqlServer = new SqlServer();
-		private readonly FwxClientWrapper _fwxClientWrapper = new FwxClientWrapper();
-		private ReadDoneDelegate _readDoneDelegate;
+    internal class QualityCheck
+    {
+        private readonly FwxClientWrapper _fwxClientWrapper = new FwxClientWrapper();
+        private ReadDoneDelegate _readDoneDelegate;
 
-		public class ReportState
-		{
-			public int Id { get; set; }
-			public string Input { get; set; }
-		}
+        // Class:              Class used as a parameter to the delegate, which will return a result and then cast to this class
+        // ====================================================================================================================
+        private class ReportState
+        {
+            public int ParentId { get; set; }
+            public int Id { get; set; }
+            public string Input { get; set; }
+        }
 
-		// Check All
-		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		public List<ReportModel> CheckAll(List<AwxSource> sources)
-		{
-			try
-			{
-				if (!TestWorkbenchConnection())
-				{
-					WorkbenchLogin login = new WorkbenchLogin();
+        // Function:            This function does multiple things: 
+        //                      1) Convert the sources from the db into ReportModel and ReportSubset objects
+        //                      2) Add these objects to a report list which will get returned
+        //                      3) Find the area that the source belongs to and add the ReportModel object to the area's list
+        //                      4) Finally, create a ReportState object of the report and then run that through the 
+        //                          ReadPointAsync function.
+        // ====================================================================================================================
+        public List<ReportModel> CheckAll(List<AwxSource> sources, List<AreaModel> areas)
+        {
+            try
+            {
+                var report = new List<ReportModel>();
+                var id = 0;
+                var original = 0; //will help us keep track if a tag needs to be broken down and which one 
+                int subsetId = 0;
 
-					if (login.ShowDialog() == true)
-					{
+                _readDoneDelegate = ReadDoneCallBack;
 
-					}
-				}
+                foreach (AwxSource item in sources) //after grabbing all sources turn them into report objects
+                {
+                    const string pattern = @"[(){}|&!]|(==\s+\d*)"; //commonly found chars in tag names to be removed
+                    string input1;
 
-				var awxSourceList = sources;
-				var report = new List<ReportModel>();
-				var id = 0;
-				var original = 0;
+                    if (item.Input1.Contains("x="))
+                    {
+                        input1 = item.Input1.Substring(2).Trim();    //removing the x=
+                        input1 = Regex.Replace(input1, pattern, "");    //removing chars
+                        input1 = input1.Replace("quality", "").Trim();
 
-				//var ascEquipmentPropertyList = new List<AscEquipmentProperty>();
-				// Alarm Sources
-				//awxSourceList = SqlServer.GetAlarmSources();
+                        var reportModel = new ReportModel
+                        {
+                            ID = id,
+                            Type = "Alarm",
+                            Area = item.AreaName,
+                            TagName = item.Name,
+                            PointName = item.Input1,
+                            PointStatus = input1,
+                            SourceID = item.ID,
+                            ReportSubset = new List<ReportSubset>()
+                        };
 
-				_readDoneDelegate = ReadDoneCallBack;
+                        report.Add(reportModel);
+                        original = id;
+                    }
+                    else
+                    {
+                        input1 = item.Input1;
+                        input1 = Regex.Replace(input1, pattern, "");
+                    }
 
-				foreach (AwxSource item in awxSourceList)
-					if (item.Input1.Contains("@"))
-					{
-						const string pattern = @"[(){}|&!]|(==\s+\d*)";
+                    string[] points = input1.Split('@');
+                    points = points.Skip(1).ToArray(); //first object in array is blank so skip to second
 
-						if (item.Input1.Contains("x="))
-						{
-							var input1 = item.Input1.Replace("x=", "").Trim();
-							input1 = Regex.Replace(input1, pattern, "");
+                    foreach (var inputPoint in points) //go through all the separated points and turn into reports
+                    {
+                        var newWord = "@" + inputPoint.Trim();
 
-							var reportModel = new ReportModel
-							{
-								ID = id,
-								Type = "Alarm",
-								Area = item.AreaName,
-								TagName = item.Name,
-								PointName = item.Input1,
-								PointStatus = input1.Replace("quality", "").Trim(),
-								SourceID = item.ID,
-								ReportSubset = new List<ReportModel>()
-							};
+                        if (original != 0)
+                        {
+                            var reportSubset = new ReportSubset
+                            {
+                                ID = subsetId,
+                                Area = item.AreaName,
+                                TagName = item.Name,
+                                PointName = newWord,
+                                PointStatus = "Updating...",
+                            };
 
-							report.Add(reportModel);
-							original = id;
-							id++;
-						}
+                            report[original].ReportSubset.Add(reportSubset);
+                            _fwxClientWrapper.ReadAsync(newWord, _readDoneDelegate, new ReportState
+                            {
+                                ParentId = id,
+                                Id = reportSubset.ID,
+                                Input = newWord
+                            });
 
-						var points = item.Input1.Split('@');
-						points = points.Skip(1).ToArray();
+                            subsetId++;
+                        }
+                        else
+                        {
+                            var reportModel = new ReportModel
+                            {
+                                ID = id,
+                                Type = "Alarm",
+                                Area = item.AreaName,
+                                TagName = item.Name,
+                                PointName = newWord,
+                                PointStatus = "Updating...",
+                                SourceID = item.ID
+                            };
 
+                            report.Add(reportModel);
+                            var foundAreas = areas.FindAll(a => a.Id == item.AreaID);
 
-						foreach (var inputPoint in points)
-						{
-							var newWord = "@" + Regex.Replace(inputPoint, pattern, "").Trim();
+                            if (foundAreas is null)
+                            {
+                                areas[1].SourcesList.Add(reportModel);
+                            }
+                            else
+                            {
+                                foreach (var area in foundAreas)
+                                {
+                                    areas.Find(a => a.Id == area.Id)?.SourcesList.Add(reportModel);
+                                }
+                            }
 
-							if (original != 0)
-							{
-								var reportSubset = new ReportModel
-								{
-									ID = id,
-									Type = "Alarm",
-									Area = item.AreaName,
-									TagName = item.Name,
-									PointName = newWord,
-									PointStatus = "Updating...",
-									SourceID = item.ID
-								};
-								(report.Find(r => r.ID == original)).ReportSubset.Add(reportSubset);
-								ReadPointAsync(newWord, new ReportState
-								{
-									Id = reportSubset.ID,
-									Input = newWord
-								});
-							}
-							else
-							{
-								var reportModel = new ReportModel
-								{
-									ID = id,
-									Type = "Alarm",
-									Area = item.AreaName,
-									TagName = item.Name,
-									PointName = newWord,
-									PointStatus = "Updating...",
-									SourceID = item.ID
-								};
+                            _fwxClientWrapper.ReadAsync(newWord, _readDoneDelegate, new ReportState
+                            {
+                                ParentId = id,
+                                Id = id,
+                                Input = newWord
+                            });
+                        }
+                    }
 
-								report.Add(reportModel);
+                    id++;
+                    subsetId = 0;
+                    original = 0;
+                }
 
-								ReadPointAsync(newWord, new ReportState
-								{
-									Id = reportModel.ID,
-									Input = newWord
-								});
-							}
-							id++;
-						}
+                return report;
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+        }
 
-						original = 0;
-					}
+        // Function:            Used in the _fwxClientWrapper.ReadAsync function. Once the async returns a result it goes to this
+        //                      function which will take the result, find the report
+        // ====================================================================================================================
+        private void ReadDoneCallBack(ReadDoneResult result)
+        {
+            var data = ((MainWindow)Application.Current.MainWindow)?.allReports;
 
-				return report;
-			}
-			catch (Exception e)
-			{
-				//MessageBox.Show(e.ToString());
-				// ReSharper disable once PossibleIntendedRethrow
-				throw e;
-			}
-		}
+            if (data != null)
+            {
+                try
+                {
+                    var item = data[(result.UserState as ReportState).ParentId];
+                    if (item.ReportSubset != null)
+                    {
+                        var subset = item.ReportSubset[(result.UserState as ReportState).Id];
 
-		/** This check of quality is used on current display of tags. The reports that are passed through have had sources that were 
-		 * refetched from the database. **/
-		public void RecheckReports(List<ReportModel> reports)
-		{
-			try
-			{
-				_readDoneDelegate = ReadDoneCallBack;
-				foreach (var report in reports)
-				{
-					if (report.PointName.Contains("@"))
-					{
-						const string pattern = @"[(){}|&!]|(==\s+\d*)";
+                        if (subset != null)
+                        {
+                            subset.PointStatus = result.Value.Status.IsBad ? "Bad" : result.Value.Status.ToString();
+                            item.PointStatus = ReplaceFirst(item.PointStatus, ((ReportState)result.UserState).Input, subset.PointStatus);
 
-						if (report.PointName.Contains("x="))
-						{
-							var input1 = report.PointName.Replace("x=", "").Trim();
-							input1 = Regex.Replace(input1, pattern, "");
-							report.PointStatus = input1.Replace("quality", "").Trim();
-						}
+                            if (!item.PointStatus.Contains("@"))
+                                item.PointStatus = item.PointStatus.Contains("Bad") ? "Bad" : "Good";
+                        }
+                    }
+                    else
+                    {
+                        item.PointStatus = result.Value.Status.IsBad ? "Bad" : result.Value.Status.ToString();
+                    }
+                }
+                catch (NullReferenceException)
+                {
+                    Console.WriteLine("Exception in ReadDoneCallBack");
+                }
+            }
+        }
 
-						var points = report.PointStatus.Split('@');
-						points = points.Skip(1).ToArray();
-						if(report.ReportSubset != null)
-						{
-							foreach(var sub in report.ReportSubset)
-							{
-								sub.PointName = "";
-								sub.PointStatus = "Updating...";
-							}
-						}
+        // Function:        Duplicate method found in MainWindow.xaml.cs; Replaces the first found matching string
+        // ====================================================================================================================
+        private string ReplaceFirst(string text, string search, string replace)
+        {
+            int pos = text.IndexOf(search, StringComparison.Ordinal);
+            if (pos < 0)
+            {
+                return text;
+            }
 
-						foreach (var inputPoint in points)
-						{
-							var newWord = "@" + Regex.Replace(inputPoint, pattern, "").Trim();
-
-							if (report.ReportSubset != null)
-							{
-								var subReport = report.ReportSubset.Find(name => name.PointName == "");
-								subReport.PointName = newWord;
-
-								ReadPointAsync(subReport.PointName, new ReportState
-								{
-									Id = subReport.ID,
-									Input = subReport.PointName
-								});
-							}
-							else
-							{
-								report.PointName = newWord;
-								report.PointStatus = "Updating...";
-
-								ReadPointAsync(newWord, new ReportState
-								{
-									Id = report.ID,
-									Input = newWord
-								});
-							}
-						}
-					}
-				}
-			}
-			catch (Exception e)
-			{
-				MessageBox.Show(e.ToString());
-				// ReSharper disable once PossibleIntendedRethrow
-				throw e;
-			}
-		}
-
-		/** This is testing the connection to workbench. This is used in the checkall function so that it is tested before trying to check quality of tags.
-		 *	If the connection is bad it will produce the string that is being checked for in the function. **/
-		public bool TestWorkbenchConnection()
-		{
-			try
-			{
-				var sampleValue = _fwxClientWrapper.Read(@"@RSLinx OPC Server\[CC100]U502500.AUX.Value");
-				//MessageBox.Show(sampleValue.Status.ToString());
-				return sampleValue.Status.ToString() != "Bad - User Access Denied";
-			}
-			catch (Exception e)
-			{
-				Console.WriteLine(e);
-				throw;
-			}
-		}
-
-
-		// Read Point Async
-		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		public void ReadPointAsync(string pointName, ReportState state)
-		{
-			_fwxClientWrapper.ReadAsync(pointName, _readDoneDelegate, state);
-		}
-
-
-		// Read Done Call Back
-		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		// ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		private void ReadDoneCallBack(ReadDoneResult result)
-		{
-			var data = ((MainWindow)Application.Current.MainWindow)?.allReports;
-
-			if (data != null)
-			{
-				foreach (var item in data)
-				{
-					if (item.ReportSubset != null)
-					{
-						var subset = item.ReportSubset.Find(s => s.ID == ((ReportState)result.UserState).Id);
-
-						if (subset != null)
-						{
-							subset.PointStatus = result.Value.Status.IsBad ? "Bad" : result.Value.Status.ToString();
-							item.PointStatus = ReplaceFirst(item.PointStatus, ((ReportState)result.UserState).Input, subset.PointStatus);
-
-							if (!item.PointStatus.Contains("@"))
-								item.PointStatus = item.PointStatus.Contains("Bad") ? "Bad" : "Good";
-						}
-					}
-					else if (item.ID == ((ReportState)result.UserState).Id)
-					{
-						item.PointStatus = result.Value.Status.IsBad ? "Bad" : result.Value.Status.ToString();
-					}
-				}
-			}
-		}
-
-		private string ReplaceFirst(string text, string search, string replace)
-		{
-			int pos = text.IndexOf(search, StringComparison.Ordinal);
-			if (pos < 0)
-			{
-				return text;
-			}
-
-			return text.Substring(0, pos) + replace + text.Substring(pos + search.Length);
-		}
-
-
-		// Asset Equipment Properties
-		//ascEquipmentPropertyList = SqlServer.GetAssetEquipmentProperties();
-
-		//foreach (var item in ascEquipmentPropertyList)
-		//{
-		//    if (item.RealtimePointName.Contains("@"))
-		//    {
-		//        string clean = item.RealtimePointName.Replace("x=", "")
-		//            .Replace("(", "")
-		//            .Replace(")", "")
-		//            .Replace("{", "")
-		//            .Replace("}", "")
-		//            .Replace("|", "")
-		//            .Replace("&", "")
-		//            .Replace("!", "");
-
-		//        string[] points = clean.Split('@');
-
-		//        for (int i = 0; i < points.Length; i++)
-		//        {
-		//            // points[i] will always be ""
-		//            //WriteEvent("Equipment Property", item.Name, GetPointQuality("@" + points[i + 1].Trim()));
-		//            i++;
-		//        }
-		//    }
-		//}
-
-	}
+            return text.Substring(0, pos) + replace + text.Substring(pos + search.Length);
+        }
+    }
 }
